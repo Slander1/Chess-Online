@@ -1,32 +1,25 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class Pawn : ChessPiece
 {
-    public override List<Vector2Int> GetAvalibleMoves(ref ChessPiece[,] board, int tileCountX, int tileCountY)
+    protected override List<Vector2Int> GetSteps(ChessPiece[,] board)
     {
-        var r = new List<Vector2Int>();
-        var direction = (team == 0)? 1:-1;
+        var steps = new List<Vector2Int>();
+        var direction = team == 0 ? 1 : -1;
         
-        if (board[currentX, currentY+direction] == null)
-            r.Add(new Vector2Int(currentX,currentY+direction));
-        
-        if (board[currentX, currentY+direction] == null)
+        if (currentPos.y == (team == 0 ? 1 : 6) && board[currentPos.x,currentPos.y+direction*2] == null)
+            steps.Add(new Vector2Int(0, direction*2));
+        for (int i = -1; i <= 1; i++)
         {
-        if (team == 0 && currentY == 1 && board[currentX,currentY+(direction*2)] == null)
-            r.Add(new Vector2Int(currentX,currentY+(direction*2)));
-        if (team == 1 && currentY == 6 && board[currentX,currentY+(direction*2)] == null)
-            r.Add(new Vector2Int(currentX,currentY+(direction*2)));
+            if (CheckBoard(currentPos.x+i, currentPos.y+direction)) continue;
+            var chessPiaces = board[currentPos.x+i, currentPos.y+direction];
+            var isMoveForward = (i==0);
+            if ((chessPiaces == null) == isMoveForward && (!isMoveForward || (chessPiaces?.team != team)))
+                steps.Add(new Vector2Int(i, direction));
         }
-        
-        if(currentX!= tileCountX-1)
-            if (board[currentX+1, currentY+direction]!= null && board[currentX+1, currentY+direction].team!=team)
-                r.Add(new Vector2Int(currentX+1,currentY+direction));
-        
-        if(currentX!= 0)
-            if (board[currentX-1, currentY+direction]!= null && board[currentX-1, currentY+direction].team!=team)
-                r.Add(new Vector2Int(currentX-1,currentY+direction));
-        return r;
+        return steps;
     }
+
 }

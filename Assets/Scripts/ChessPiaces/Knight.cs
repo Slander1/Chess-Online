@@ -1,69 +1,24 @@
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Knight : ChessPiece
 {
-    public override List<Vector2Int> GetAvalibleMoves(ref ChessPiece[,] board, int tileCountX, int tileCountY)
+    private List<Vector2Int> Steps => new List<Vector2Int>()
     {
-        
-        var r = new List<Vector2Int>();
+        new Vector2Int(2, 1),
+        new Vector2Int(1, 2), 
+        new Vector2Int(-1, 2),
+        new Vector2Int(-2, 1),
+        new Vector2Int(2, -1),
+        new Vector2Int(1, -2), 
+        new Vector2Int(-1, -2),
+        new Vector2Int(-2, -1),
+    };
 
-        var x = currentX + 1;
-        var y = currentY + 2;
-        if (x<tileCountX && y < tileCountY)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        x = currentX + 2; 
-        y = currentY + 1;
-        if (x<tileCountX && y < tileCountY)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        
-        
-        x = currentX - 1;
-        y = currentY + 2;
-        if (x>=0 && y < tileCountY)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        x = currentX - 2;
-        y = currentY + 1;
-        if (x>=0 && y < tileCountY)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        
-        
-        x = currentX + 1;
-        y = currentY - 2;
-        if (x < tileCountX && y >=0)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        x = currentX + 2;
-        y = currentY - 1;
-        if (x < tileCountX && y >=0)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        
-        
-        x = currentX - 1;
-        y = currentY - 2;
-        if (x >= 0 && y >= 0)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        
-        x = currentX - 2;
-        y = currentY - 1;
-        if (x < tileCountX && y >=0)
-            if (board[x,y] == null || board[x,y].team != team)
-                r.Add(new Vector2Int(x, y));
-        return r;
-        
-        
+    protected override List<Vector2Int> GetSteps(ChessPiece[,] board)
+    {
+        return Steps;
     }
 }

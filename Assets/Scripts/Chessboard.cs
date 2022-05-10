@@ -21,10 +21,10 @@ public class Chessboard : MonoBehaviour
 
     [SerializeField] private Material[] teammaterials;
 
-
-
-    private const int TILE_COUNT_X = 8;
-    private const int TILE_COUNT_Y = 8;
+    
+    public static readonly int TILE_COUNT_X = 8;
+    public static readonly  int TILE_COUNT_Y = 8;
+    
     private const string HOVER = "Hover";
     private const string TILE = "Tile";
     private const string HIGLIGHT = "Hightlight";
@@ -32,17 +32,19 @@ public class Chessboard : MonoBehaviour
     private List<ChessPiece> _deadWhite = new List<ChessPiece>();
     private List<ChessPiece> _deadBlack = new List<ChessPiece>();
     private List<Vector2Int> _availableMoves = new List<Vector2Int>();
-    
+
     private ChessPiece[,] _chessPieces;
     private ChessPiece _currentlyDragging;
     private GameObject[,] _tiles;
     private Camera _currentCamera;
     private Vector2Int _currentHover;
     private Vector3 _bounds;
+    private bool _isBlackTurn;
 
 
     private void Awake()
     {
+        _isBlackTurn = false;
         _currentCamera = Camera.main;
         GenerateAllTiles(tileSize, TILE_COUNT_X, TILE_COUNT_Y);
 
@@ -52,7 +54,6 @@ public class Chessboard : MonoBehaviour
 
     private void Update()
     {
-
         Ray ray = _currentCamera.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out var info, 100, LayerMask.GetMask(TILE, HOVER, HIGLIGHT)))
         {
@@ -68,33 +69,28 @@ public class Chessboard : MonoBehaviour
             if (_currentHover != hitPosition)
             {
                 _tiles[_currentHover.x, _currentHover.y].layer =
-                    (ContainsValidMove(ref _availableMoves, _currentHover)) ? LayerMask.NameToLayer(HIGLIGHT): LayerMask.NameToLayer(TILE);
+                    (ContainsValidMove(ref _availableMoves, _currentHover))
+                        ? LayerMask.NameToLayer(HIGLIGHT)
+                        : LayerMask.NameToLayer(TILE);
                 _currentHover = hitPosition;
                 _tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(HOVER);
             }
 
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && _chessPieces[hitPosition.x, hitPosition.y] != null && 
+                Convert.ToBoolean(_chessPieces[hitPosition.x, hitPosition.y].team) == _isBlackTurn)
             {
-                if (_chessPieces[hitPosition.x, hitPosition.y] != null)
-                {
-                    if (true)
-                    {
-                        _currentlyDragging = _chessPieces[hitPosition.x,hitPosition.y];
-                        _availableMoves = _currentlyDragging.GetAvalibleMoves(ref _chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
-                        HighlightTiles();
-                    }
-                }
+                _currentlyDragging = _chessPieces[hitPosition.x, hitPosition.y];
+                _availableMoves = _currentlyDragging.GetAvailableMoves(_chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                HighlightTiles();
             }
 
-            if (_currentlyDragging!=null && Input.GetMouseButtonUp(0))
+            if (_currentlyDragging != null && Input.GetMouseButtonUp(0))
             {
-                var previusPosition = new Vector2Int(_currentlyDragging.currentX, _currentlyDragging.currentY);
-                
-                
-                var validMove = MoveTo(_currentlyDragging, hitPosition.x, hitPosition.y);
+                var lastPosition = _currentlyDragging.currentPos;
+                var validMove = MoveTo(_currentlyDragging, hitPosition);
                 if (!validMove)
-                    _currentlyDragging.SetPosition(GetTileCenter(previusPosition.x, previusPosition.y));
-                
+                    _currentlyDragging.SetPosition(GetTileCenter(lastPosition));
+
                 _currentlyDragging = null;
                 RemoveHighlightTiles();
             }
@@ -103,16 +99,18 @@ public class Chessboard : MonoBehaviour
         }
         else
         {
-            if (_currentHover!= -Vector2Int.one)
+            if (_currentHover != -Vector2Int.one)
             {
-                _tiles[_currentHover.x, _currentHover.y].layer = 
-                    (ContainsValidMove(ref _availableMoves, _currentHover)) ? LayerMask.NameToLayer(HIGLIGHT): LayerMask.NameToLayer(TILE);
+                _tiles[_currentHover.x, _currentHover.y].layer =
+                    (ContainsValidMove(ref _availableMoves, _currentHover))
+                        ? LayerMask.NameToLayer(HIGLIGHT)
+                        : LayerMask.NameToLayer(TILE);
                 _currentHover = -Vector2Int.one;
             }
 
             if (_currentlyDragging && Input.GetMouseButtonUp(0))
             {
-                _currentlyDragging.SetPosition(GetTileCenter(_currentlyDragging.currentX, _currentlyDragging.currentY)); 
+                _currentlyDragging.SetPosition(GetTileCenter(_currentlyDragging.currentPos));
                 _currentlyDragging = null;
                 RemoveHighlightTiles();
             }
@@ -120,14 +118,14 @@ public class Chessboard : MonoBehaviour
 
         if (_currentlyDragging)
         {
-            var horizontalPlane = new Plane(Vector3.up, Vector3.up*yOffset);
+            var horizontalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
             if (horizontalPlane.Raycast(ray, out var distance))
             {
-                _currentlyDragging.SetPosition(ray.GetPoint(distance)+Vector3.up * dragOffset);
+                _currentlyDragging.SetPosition(ray.GetPoint(distance) + Vector3.up * dragOffset);
             }
         }
     }
-    
+
     private void GenerateAllTiles(float tileSize, int tileCountX, int tileCountY)
     {
         yOffset += transform.position.y;
@@ -175,13 +173,13 @@ public class Chessboard : MonoBehaviour
         _chessPieces[0, 0] = SpawnSinglePeace(ChessPieceType.Rook, whiteTeam);
         _chessPieces[1, 0] = SpawnSinglePeace(ChessPieceType.Knight, whiteTeam);
         _chessPieces[2, 0] = SpawnSinglePeace(ChessPieceType.Bishop, whiteTeam);
-        _chessPieces[3, 0] = SpawnSinglePeace(ChessPieceType.King, whiteTeam);
-        _chessPieces[4, 0] = SpawnSinglePeace(ChessPieceType.Queen, whiteTeam);
+        _chessPieces[3, 0] = SpawnSinglePeace(ChessPieceType.Queen, whiteTeam);
+        _chessPieces[4, 0] = SpawnSinglePeace(ChessPieceType.King, whiteTeam);       
         _chessPieces[5, 0] = SpawnSinglePeace(ChessPieceType.Bishop, whiteTeam);
         _chessPieces[6, 0] = SpawnSinglePeace(ChessPieceType.Knight, whiteTeam);
         _chessPieces[7, 0] = SpawnSinglePeace(ChessPieceType.Rook, whiteTeam);
         for (int i = 0; i < TILE_COUNT_X; i++)
-           _chessPieces[i, 1] = SpawnSinglePeace(ChessPieceType.Pawn, whiteTeam);
+            _chessPieces[i, 1] = SpawnSinglePeace(ChessPieceType.Pawn, whiteTeam);
         _chessPieces[0, 7] = SpawnSinglePeace(ChessPieceType.Rook, blackTeam);
         _chessPieces[1, 7] = SpawnSinglePeace(ChessPieceType.Knight, blackTeam);
         _chessPieces[2, 7] = SpawnSinglePeace(ChessPieceType.Bishop, blackTeam);
@@ -190,7 +188,7 @@ public class Chessboard : MonoBehaviour
         _chessPieces[5, 7] = SpawnSinglePeace(ChessPieceType.Bishop, blackTeam);
         _chessPieces[6, 7] = SpawnSinglePeace(ChessPieceType.Knight, blackTeam);
         _chessPieces[7, 7] = SpawnSinglePeace(ChessPieceType.Rook, blackTeam);
-        for (int i = 0; i < TILE_COUNT_X; i++) 
+        for (int i = 0; i < TILE_COUNT_X; i++)
             _chessPieces[i, 6] = SpawnSinglePeace(ChessPieceType.Pawn, blackTeam);
     }
 
@@ -207,24 +205,24 @@ public class Chessboard : MonoBehaviour
     private void PositionAllPiaces()
     {
         for (int x = 0; x < TILE_COUNT_X; x++)
-            for (int y = 0; y < TILE_COUNT_Y; y++)
-                if (_chessPieces[x,y] != null)
-                    PositionSinglePiaces(x,y,true);
+        for (int y = 0; y < TILE_COUNT_Y; y++)
+            if (_chessPieces[x, y] != null)
+                PositionSinglePiaces(new Vector2Int(x, y), true);
     }
 
-    private void PositionSinglePiaces(int x, int y, bool force = false)
+    private void PositionSinglePiaces(Vector2Int pos, bool force = false)
     {
-        _chessPieces[x, y].currentX = x;
-        _chessPieces[x, y].currentY = y;
-        _chessPieces[x,y].SetPosition(GetTileCenter(x,y), force);
+        _chessPieces[pos.x, pos.y].currentPos = pos;
+        _chessPieces[pos.x, pos.y].SetPosition(GetTileCenter(pos), force);
     }
 
-    private Vector3 GetTileCenter(int x, int y)
+    private Vector3 GetTileCenter(Vector2Int pos)
     {
-        return new Vector3(x*tileSize, yOffset+0.2f,y *tileSize) - _bounds + new Vector3(tileSize/2,0,tileSize/2);
+        return new Vector3(pos.x * tileSize, yOffset + 0.2f, pos.y * tileSize) - _bounds +
+               new Vector3(tileSize / 2, 0, tileSize / 2);
     }
 
-    
+
     private void HighlightTiles()
     {
         for (int i = 0; i < _availableMoves.Count; i++)
@@ -232,19 +230,20 @@ public class Chessboard : MonoBehaviour
             _tiles[_availableMoves[i].x, _availableMoves[i].y].layer = LayerMask.NameToLayer(HIGLIGHT);
         }
     }
+
     private void RemoveHighlightTiles()
     {
         for (int i = 0; i < _availableMoves.Count; i++)
-            _tiles[_availableMoves[i].x, _availableMoves[i].y].layer = LayerMask.NameToLayer(TILE); 
-        
-        _availableMoves.Clear();
+            _tiles[_availableMoves[i].x, _availableMoves[i].y].layer = LayerMask.NameToLayer(TILE);
 
+        _availableMoves.Clear();
     }
 
-    private bool ContainsValidMove(ref List<Vector2Int> moves, Vector2 pos)
+    private bool ContainsValidMove(ref List<Vector2Int> moves, Vector2Int pos)
     {
+        return moves.Contains(pos);
         for (int i = 0; i < moves.Count; i++)
-            if (moves[i].x == pos.x && moves[i].y == pos.y)
+            if (moves[i] == pos)
                 return true;
 
         return false;
@@ -253,19 +252,20 @@ public class Chessboard : MonoBehaviour
     private Vector2Int LockupTileIndex(GameObject hitinfo)
     {
         for (int x = 0; x < TILE_COUNT_X; x++)
-            for (int y = 0; y < TILE_COUNT_Y; y++)
-                if (_tiles[x,y] == hitinfo)
-                    return new Vector2Int(x, y);
+        for (int y = 0; y < TILE_COUNT_Y; y++)
+            if (_tiles[x, y] == hitinfo)
+                return new Vector2Int(x, y);
 
         return -Vector2Int.one;
     }
-    private bool MoveTo(ChessPiece currentlyDragging, in int x, in int y)
+
+    private bool MoveTo(ChessPiece currentlyDragging, in Vector2Int pos)
     {
-        if (!ContainsValidMove(ref _availableMoves, new Vector2(x, y)))
+        if (!ContainsValidMove(ref _availableMoves, pos))
             return false;
-        if (_chessPieces[x,y] != null)
+        if (_chessPieces[pos.x, pos.y] != null)
         {
-            ChessPiece otherChessPiaces = _chessPieces[x,y];
+            ChessPiece otherChessPiaces = _chessPieces[pos.x, pos.y];
             if (otherChessPiaces.team == currentlyDragging.team)
             {
                 return false;
@@ -274,7 +274,7 @@ public class Chessboard : MonoBehaviour
             if (otherChessPiaces.team == 0)
             {
                 _deadWhite.Add(otherChessPiaces);
-                otherChessPiaces.SetScale(Vector3.one*deadScale);
+                otherChessPiaces.SetScale(Vector3.one * deadScale);
                 otherChessPiaces.SetPosition(new Vector3(TILE_COUNT_X * tileSize, yOffset, -1 * tileSize)
                     - _bounds + new Vector3(tileSize * 0.5f, 0, tileSize * 0.5f)
                               + (Vector3.forward * (deadSpacing * _deadWhite.Count)));
@@ -288,11 +288,14 @@ public class Chessboard : MonoBehaviour
                               + (Vector3.back * (deadSpacing * _deadBlack.Count)));
             }
         }
-        var previusPosition = new Vector2Int(currentlyDragging.currentX, currentlyDragging.currentY);
-        _chessPieces[x, y] = currentlyDragging;
+
+        var previusPosition = _currentlyDragging.currentPos;
+        _chessPieces[pos.x, pos.y] = currentlyDragging;
         _chessPieces[previusPosition.x, previusPosition.y] = null;
-        
-        PositionSinglePiaces(x,y);
+
+        PositionSinglePiaces(pos);
+
+        _isBlackTurn = !_isBlackTurn;
 
         return true;
     }

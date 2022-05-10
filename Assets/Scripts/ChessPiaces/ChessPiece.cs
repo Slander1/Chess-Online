@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public enum ChessPieceType
@@ -14,31 +15,41 @@ public enum ChessPieceType
 }
 
 
-public class ChessPiece : MonoBehaviour
+public abstract class ChessPiece : MonoBehaviour
 {
     public MeshRenderer meshRenderer;
     public int team;
-    public int currentX;
-    public int currentY;
+    public Vector2Int currentPos;
     public ChessPieceType type;
+    
 
     private Vector3 desiredPosition;
     private Vector3 desiredScale = Vector3.one;
+        
+    
+    protected abstract List<Vector2Int> GetSteps(ChessPiece[,] board);
 
     private void Update()
     {
         transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * 10);
         transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * 10);
     }
-
-    public virtual List<Vector2Int> GetAvalibleMoves(ref ChessPiece[,] board, int tileCountX, int tileCountY)
+    
+    public List<Vector2Int> GetAvailableMoves(ChessPiece[,] board, int tileCountX, int tileCountY)
     {
-         var r = new List<Vector2Int>();
-            r.Add(new Vector2Int(3,3));
-            r.Add(new Vector2Int(3,4));
-            r.Add(new Vector2Int(4,3));
-            r.Add(new Vector2Int(4,4));
-            return r;
+        var allSteps = GetSteps(board);
+        allSteps = allSteps.Where(step =>
+            {
+                var nextStep = currentPos + step;
+                if (nextStep.x >= tileCountX || nextStep.y >= tileCountY || nextStep.x < 0 || nextStep.y < 0)
+                    return false;
+                return (board[nextStep.x, nextStep.y] == null || board[nextStep.x, nextStep.y].team != team);
+            })
+            .Select(step => step + currentPos)
+            .ToList();
+
+
+        return allSteps;
     }
     public virtual void SetPosition(Vector3 position, bool force = false)
     {
@@ -53,6 +64,9 @@ public class ChessPiece : MonoBehaviour
         if (force)
             transform.localScale = desiredScale;
     }
-
+    protected static bool CheckBoard(int x, int y)
+    {
+        return (x < 0 || y < 0 || x >= Chessboard.TILE_COUNT_X || y >= Chessboard.TILE_COUNT_Y);
+    }
     
 }

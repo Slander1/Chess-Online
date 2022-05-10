@@ -69,7 +69,7 @@ public class Chessboard : MonoBehaviour
             if (_currentHover != hitPosition)
             {
                 _tiles[_currentHover.x, _currentHover.y].layer =
-                    (ContainsValidMove(ref _availableMoves, _currentHover))
+                    (_availableMoves.Contains(_currentHover))
                         ? LayerMask.NameToLayer(HIGLIGHT)
                         : LayerMask.NameToLayer(TILE);
                 _currentHover = hitPosition;
@@ -80,7 +80,7 @@ public class Chessboard : MonoBehaviour
                 Convert.ToBoolean(_chessPieces[hitPosition.x, hitPosition.y].team) == _isBlackTurn)
             {
                 _currentlyDragging = _chessPieces[hitPosition.x, hitPosition.y];
-                _availableMoves = _currentlyDragging.GetAvailableMoves(_chessPieces, TILE_COUNT_X, TILE_COUNT_Y);
+                _availableMoves = _currentlyDragging.GetAvailableMoves(_chessPieces);
                 HighlightTiles();
             }
 
@@ -94,15 +94,13 @@ public class Chessboard : MonoBehaviour
                 _currentlyDragging = null;
                 RemoveHighlightTiles();
             }
-
-            //if (in)
         }
         else
         {
             if (_currentHover != -Vector2Int.one)
             {
                 _tiles[_currentHover.x, _currentHover.y].layer =
-                    (ContainsValidMove(ref _availableMoves, _currentHover))
+                    (_availableMoves.Contains(_currentHover))
                         ? LayerMask.NameToLayer(HIGLIGHT)
                         : LayerMask.NameToLayer(TILE);
                 _currentHover = -Vector2Int.one;
@@ -154,7 +152,7 @@ public class Chessboard : MonoBehaviour
             new Vector3((x + 1) * tileSize, yOffset, (y + 1) * tileSize) - _bounds
         };
 
-        int[] tris = new int[] {0, 1, 2, 1, 3, 2};
+        int[] tris = {0, 1, 2, 1, 3, 2};
 
         mesh.vertices = vertices;
         mesh.triangles = tris;
@@ -225,28 +223,18 @@ public class Chessboard : MonoBehaviour
 
     private void HighlightTiles()
     {
-        for (int i = 0; i < _availableMoves.Count; i++)
+        foreach (var movePos in _availableMoves)
         {
-            _tiles[_availableMoves[i].x, _availableMoves[i].y].layer = LayerMask.NameToLayer(HIGLIGHT);
+            _tiles[movePos.x, movePos.y].layer = LayerMask.NameToLayer(HIGLIGHT);
         }
     }
 
     private void RemoveHighlightTiles()
     {
-        for (int i = 0; i < _availableMoves.Count; i++)
-            _tiles[_availableMoves[i].x, _availableMoves[i].y].layer = LayerMask.NameToLayer(TILE);
+        foreach (var movePos in _availableMoves)
+            _tiles[movePos.x, movePos.y].layer = LayerMask.NameToLayer(TILE);
 
         _availableMoves.Clear();
-    }
-
-    private bool ContainsValidMove(ref List<Vector2Int> moves, Vector2Int pos)
-    {
-        return moves.Contains(pos);
-        for (int i = 0; i < moves.Count; i++)
-            if (moves[i] == pos)
-                return true;
-
-        return false;
     }
 
     private Vector2Int LockupTileIndex(GameObject hitinfo)
@@ -261,7 +249,7 @@ public class Chessboard : MonoBehaviour
 
     private bool MoveTo(ChessPiece currentlyDragging, in Vector2Int pos)
     {
-        if (!ContainsValidMove(ref _availableMoves, pos))
+        if (!_availableMoves.Contains(pos))
             return false;
         if (_chessPieces[pos.x, pos.y] != null)
         {
@@ -271,27 +259,29 @@ public class Chessboard : MonoBehaviour
                 return false;
             }
 
-            if (otherChessPiaces.team == 0)
-            {
-                _deadWhite.Add(otherChessPiaces);
-                otherChessPiaces.SetScale(Vector3.one * deadScale);
-                otherChessPiaces.SetPosition(new Vector3(TILE_COUNT_X * tileSize, yOffset, -1 * tileSize)
-                    - _bounds + new Vector3(tileSize * 0.5f, 0, tileSize * 0.5f)
-                              + (Vector3.forward * (deadSpacing * _deadWhite.Count)));
-            }
-            else
-            {
-                _deadBlack.Add(otherChessPiaces);
-                otherChessPiaces.SetScale(Vector3.one * deadScale);
-                otherChessPiaces.SetPosition(new Vector3(-1 * tileSize, yOffset, TILE_COUNT_X * tileSize)
-                    - _bounds + new Vector3(tileSize * 0.5f, 0, tileSize * 0.5f)
-                              + (Vector3.back * (deadSpacing * _deadBlack.Count)));
-            }
+            var isFirstTeam = otherChessPiaces.team == 0;
+            var chessPiecesDirection = isFirstTeam ? 1 : -1;
+            var startPositionShiftX = new[]{ -0.7f, TILE_COUNT_X - 0.3f};
+            var startPositionShiftZ = new[]{ 0, TILE_COUNT_X -1};
+            var deadTeam = isFirstTeam ? _deadWhite : _deadBlack;
+
+            var boardSize = new Vector3(tileSize * 0.5f, 0, tileSize * 0.5f) - _bounds;
+            var shift = Vector3.forward * (chessPiecesDirection * deadSpacing * deadTeam.Count);
+            otherChessPiaces.SetScale(Vector3.one * deadScale);
+            
+            var startPosition = new Vector3(
+                startPositionShiftX[isFirstTeam ? 1 : 0] * tileSize,
+                yOffset,
+                startPositionShiftZ[isFirstTeam ? 0 : 1] * tileSize);
+            
+            deadTeam.Add(otherChessPiaces);
+            
+            otherChessPiaces.SetPosition(startPosition + boardSize + shift);
         }
 
-        var previusPosition = _currentlyDragging.currentPos;
+        var lastPosition = _currentlyDragging.currentPos;
         _chessPieces[pos.x, pos.y] = currentlyDragging;
-        _chessPieces[previusPosition.x, previusPosition.y] = null;
+        _chessPieces[lastPosition.x, lastPosition.y] = null;
 
         PositionSinglePiaces(pos);
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Authentication.ExtendedProtection;
 using UnityEngine;
 
 public enum ChessPieceType
@@ -34,31 +35,81 @@ public abstract class ChessPiece : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * 10);
         transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * 10);
     }
-    
-    public List<Vector2Int> GetAvailableMoves(ChessPiece[,] board, int tileCountX, int tileCountY)
+
+    private List<Vector2Int> GetMoves(ChessPiece[,] board)
     {
         var allSteps = GetSteps(board);
-        allSteps = allSteps.Where(step =>
+        return allSteps.Where(step =>
             {
                 var nextStep = currentPos + step;
-                if (nextStep.x >= tileCountX || nextStep.y >= tileCountY || nextStep.x < 0 || nextStep.y < 0)
-                    return false;
-                return (board[nextStep.x, nextStep.y] == null || board[nextStep.x, nextStep.y].team != team);
+                return !(nextStep.x >= Chessboard.TILE_COUNT_X ||
+                         nextStep.y >= Chessboard.TILE_COUNT_Y ||
+                         nextStep.x < 0 || nextStep.y < 0 ||
+                         (board[nextStep.x, nextStep.y] != null && board[nextStep.x, nextStep.y].team == team));
             })
             .Select(step => step + currentPos)
             .ToList();
-
-
-        return allSteps;
     }
-    public virtual void SetPosition(Vector3 position, bool force = false)
+    
+    public List<Vector2Int> GetAvailableMoves(ChessPiece[,] board)
+    {
+        var moves = GetMoves(board);
+
+        return moves.Where(nextPos =>
+        { var lastPos = currentPos;
+
+            var lastPiece = board[nextPos.x, nextPos.y];
+            board[nextPos.x, nextPos.y] = this;
+            board[lastPos.x, lastPos.y] = null;
+            currentPos = nextPos;
+
+            var isCheck = IsKingUnderAttack(board);
+
+            currentPos = lastPos;
+            board[nextPos.x, nextPos.y] = lastPiece;
+            board[lastPos.x, lastPos.y] = this;
+            return !isCheck;
+        }).ToList();
+
+    }
+
+    private bool IsKingUnderAttack(ChessPiece[,] board)
+    {
+        King ourKing = null;
+        if (this is King iKing)
+        {
+            ourKing = iKing;
+        }
+        else
+        {
+            foreach (var chessPiece in board)
+                if (chessPiece != null && chessPiece.team == team && chessPiece is King thereKing)
+                {
+                    ourKing = thereKing;
+                    break;
+                }
+        }
+
+        foreach (var chessPiece in board)
+        {
+            if (chessPiece == null || chessPiece.team == team)
+                continue;
+
+            if (chessPiece.GetMoves(board).Contains(ourKing.currentPos))
+                return true;
+        }
+
+        return false;
+    }
+    
+    public void SetPosition(Vector3 position, bool force = false)
     {
         desiredPosition = position;
         if (force)
             transform.position = desiredPosition;
     }
     
-    public virtual void SetScale(Vector3 scale, bool force = false)
+    public void SetScale(Vector3 scale, bool force = false)
     {
         desiredScale = scale;
         if (force)

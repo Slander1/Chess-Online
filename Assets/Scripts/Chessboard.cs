@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using UnityEditor;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -40,7 +40,8 @@ public class Chessboard : MonoBehaviour
     private Vector2Int _currentHover;
     private Vector3 _bounds;
     private bool _isBlackTurn;
-
+    public static event Action<int> OnCheck;
+    public static event Action<int> OnMate; 
 
     private void Awake()
     {
@@ -284,9 +285,49 @@ public class Chessboard : MonoBehaviour
         _chessPieces[lastPosition.x, lastPosition.y] = null;
 
         PositionSinglePiaces(pos);
-
+        
         _isBlackTurn = !_isBlackTurn;
+        var turn = _isBlackTurn ? 0 : 1;
+        
 
+        if (!IsMate(_chessPieces, turn))
+        {
+            OnMate?.Invoke(turn);
+            return true;
+        }
+        if (IsKingUnderAttack(_chessPieces,turn == 0? 1:0))
+        {
+            OnCheck?.Invoke(turn);
+        }
         return true;
+    }
+
+    public static bool IsKingUnderAttack(ChessPiece[,] board, int team)
+    {
+        King ourKing = null;
+
+        foreach (var chessPiece in board)
+            if (chessPiece != null && chessPiece.team == team && chessPiece is King thereKing)
+            {
+                ourKing = thereKing;
+                break;
+            }
+
+        foreach (var chessPiece in board)
+        {
+            if (chessPiece == null || chessPiece.team == team)
+                continue;
+
+            if (chessPiece.GetMoves(board).Contains(ourKing.currentPos))
+                return true;
+        }
+        
+        return false;
+    }
+
+    public static bool IsMate(ChessPiece[,] board, int team)
+    {
+        return (board.Cast<ChessPiece>().Where(chessPiece => chessPiece != null && chessPiece.team != team)
+            .Any(chessPiece => chessPiece.GetAvailableMoves(board).Count > 0));
     }
 }

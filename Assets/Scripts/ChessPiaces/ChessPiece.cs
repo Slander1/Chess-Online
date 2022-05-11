@@ -36,7 +36,7 @@ public abstract class ChessPiece : MonoBehaviour
         transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * 10);
     }
 
-    private List<Vector2Int> GetMoves(ChessPiece[,] board)
+    public List<Vector2Int> GetMoves(ChessPiece[,] board)
     {
         var allSteps = GetSteps(board);
         return allSteps.Where(step =>
@@ -56,51 +56,23 @@ public abstract class ChessPiece : MonoBehaviour
         var moves = GetMoves(board);
 
         return moves.Where(nextPos =>
-        { var lastPos = currentPos;
-
+        { 
+            var lastPos = currentPos;
             var lastPiece = board[nextPos.x, nextPos.y];
             board[nextPos.x, nextPos.y] = this;
             board[lastPos.x, lastPos.y] = null;
             currentPos = nextPos;
 
-            var isCheck = IsKingUnderAttack(board);
+            var isCheck = Chessboard.IsKingUnderAttack(board, team);
 
             currentPos = lastPos;
             board[nextPos.x, nextPos.y] = lastPiece;
             board[lastPos.x, lastPos.y] = this;
             return !isCheck;
         }).ToList();
-
     }
 
-    private bool IsKingUnderAttack(ChessPiece[,] board)
-    {
-        King ourKing = null;
-        if (this is King iKing)
-        {
-            ourKing = iKing;
-        }
-        else
-        {
-            foreach (var chessPiece in board)
-                if (chessPiece != null && chessPiece.team == team && chessPiece is King thereKing)
-                {
-                    ourKing = thereKing;
-                    break;
-                }
-        }
-
-        foreach (var chessPiece in board)
-        {
-            if (chessPiece == null || chessPiece.team == team)
-                continue;
-
-            if (chessPiece.GetMoves(board).Contains(ourKing.currentPos))
-                return true;
-        }
-
-        return false;
-    }
+    
     
     public void SetPosition(Vector3 position, bool force = false)
     {

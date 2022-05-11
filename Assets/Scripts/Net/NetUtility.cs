@@ -31,13 +31,13 @@ public static class NetUtility
         Server server = null)
     {
         NetMessage msg = null;
-        var opCode = (Opcode) dataStreamReader.ReadByte();
+        var opCode = (Opcode)dataStreamReader.ReadByte();
         switch (opCode)
         {
             case Opcode.KEEP_ALIVE: msg = new NetKeepAlive(dataStreamReader); break; 
-            /*case Opcode.WELCOME: msg = new NetWeclome(dataStreamReader); break;
+            case Opcode.WELCOME: msg = new NetWelcome(dataStreamReader); break;
             case Opcode.START_GAME:msg = new NetStartGame(dataStreamReader); break;
-            case Opcode.MAKE_MOVE:msg = new NetMakeMove(dataStreamReader); break;
+            /*case Opcode.MAKE_MOVE:msg = new NetMakeMove(dataStreamReader); break;
             case Opcode.REMATCH:msg = new NetRematch(dataStreamReader); break;*/
             default:
                 Debug.LogError("Message recived had no OpCode");

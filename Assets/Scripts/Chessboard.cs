@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 public class Chessboard : MonoBehaviour
 {
@@ -40,6 +42,8 @@ public class Chessboard : MonoBehaviour
     private Vector2Int _currentHover;
     private Vector3 _bounds;
     private bool _isBlackTurn;
+    private int _playerCount = -1;
+    private int _currentTeam = -1;
     public static event Action<int> OnCheck;
     public static event Action<int> OnMate; 
 
@@ -51,7 +55,50 @@ public class Chessboard : MonoBehaviour
 
         SpawnAllPiaces();
         PositionAllPiaces();
+
+        RegisterEvents();
     }
+
+    #region Reg
+    private void RegisterEvents()
+    {
+        NetUtility.S_WELCOME += OnWelcomeServer;
+        NetUtility.C_WELCOME += OnWelcomeClient;
+        NetUtility.C_STARTGAME += OnStartGameClient;
+    }
+
+    private void OnStartGameClient(NetMessage msg)
+    {
+        Buttons.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+    }
+
+    private void OnWelcomeClient(NetMessage msg)
+    {
+        NetWelcome netWelcome = msg as NetWelcome;
+
+        _currentTeam = netWelcome.AssignedTeam;
+        
+        Debug.Log($"My assigned team is {netWelcome.AssignedTeam}");
+    }
+
+
+    private void UnRegisterEvents()
+    {
+        
+    }
+    
+    private void OnWelcomeServer(NetMessage msg, NetworkConnection networkConnection)
+    {
+        NetWelcome netWelcome = msg as NetWelcome;
+
+        netWelcome.AssignedTeam = ++_playerCount;
+        
+        Server.Instance.SendToClient(networkConnection, netWelcome);
+
+        if (_playerCount == 1)
+            Server.Instance.Broadcast(new NetStartGame());
+    }
+    #endregion
 
     private void Update()
     {

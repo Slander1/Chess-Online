@@ -121,7 +121,7 @@ public class Server : MonoBehaviour
         }
     }
     
-    private void SendToClient(NetworkConnection connection, NetMessage msg)
+    public void SendToClient(NetworkConnection connection, NetMessage msg)
     {
         driver.BeginSend(connection, out var streamWriter);
         msg.Serialize(ref streamWriter);

@@ -1,8 +1,13 @@
-using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
+
+public enum CameraAngle
+{
+    menu = 0,
+    whiteTeam = 1,
+    blackTeam = 2
+}
 
 public class Buttons : MonoBehaviour
 {
@@ -13,6 +18,7 @@ public class Buttons : MonoBehaviour
     [SerializeField] private Button exitButton;
     [SerializeField] private Animator MenuAnimator;
     [SerializeField] private TMP_InputField addressInput;
+    [SerializeField] private GameObject[] cameraAngles;
 
     private string[] triggers =
     {
@@ -23,22 +29,37 @@ public class Buttons : MonoBehaviour
     };
 
 
-    public Buttons Instance { set; get; }
+    public static Buttons Instance { set; get; }
 
 
     public Server server;
     public Client client;
-    private void Awake()
+    public void Awake()
     {
         Instance = this;
     }
 
+    public void ChangeCamera(CameraAngle index)
+    {
+        for (int i = 0; i < cameraAngles.Length; i++)
+        {
+            cameraAngles[i].SetActive(false);
+        }
+        
+        cameraAngles[(int)index].SetActive(true);
+    }
+    
     public void OnEnable()
     {
         Chessboard.OnCheck += Shah;
         Chessboard.OnMate += Victory;
     }
 
+    public void OnDisable()
+    {
+        Chessboard.OnCheck -= Shah;
+        Chessboard.OnMate -= Victory;
+    }
     public void OnLocaleGameButtonClick()
     {
         MenuAnimator.SetTrigger(triggers[3]);
@@ -54,7 +75,7 @@ public class Buttons : MonoBehaviour
     public void OnOnlineHostButtonClick()
     {
         server.Init(8007);
-        client.Init("127.0.0.1", 8005);
+        client.Init("127.0.0.1", 8007); // Не забыть поменять
         MenuAnimator.SetTrigger(triggers[1]);
     }
 

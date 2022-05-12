@@ -22,7 +22,7 @@ public class NetStartGame : NetMessage
 
     public override void Desirialize(DataStreamReader dataStreamReader)
     {
-        AssignedTeam = dataStreamReader.ReadInt();
+        //AssignedTeam = dataStreamReader.ReadInt();
     }
 
     public override void RecivedOnClient()

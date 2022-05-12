@@ -95,8 +95,8 @@ public class Client : MonoBehaviour
             }
         }
     }
-    
-    private void SendToServer(NetMessage msg)
+
+    public void SendToServer(NetMessage msg)
     {
         DataStreamWriter streamWriter;
         driver.BeginSend(_connesction, out streamWriter);

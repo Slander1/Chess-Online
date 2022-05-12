@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,9 +17,11 @@ public class Buttons : MonoBehaviour
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button exitButton;
-    [SerializeField] private Animator MenuAnimator;
+    public Animator MenuAnimator;
     [SerializeField] private TMP_InputField addressInput;
     [SerializeField] private GameObject[] cameraAngles;
+
+    public Action<bool> setLocaleGane;
 
     private string[] triggers =
     {
@@ -62,6 +65,7 @@ public class Buttons : MonoBehaviour
     }
     public void OnLocaleGameButtonClick()
     {
+        setLocaleGane?.Invoke(true);
         MenuAnimator.SetTrigger(triggers[3]);
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
@@ -74,6 +78,7 @@ public class Buttons : MonoBehaviour
     
     public void OnOnlineHostButtonClick()
     {
+        setLocaleGane?.Invoke(false);
         server.Init(8007);
         client.Init("127.0.0.1", 8007); // Не забыть поменять
         MenuAnimator.SetTrigger(triggers[1]);
@@ -81,6 +86,7 @@ public class Buttons : MonoBehaviour
 
     public void OnOnlineConnectButtonClick()
     {
+        setLocaleGane?.Invoke(true);
         client.Init(addressInput.text, 8007);
     }
 
@@ -128,5 +134,7 @@ public class Buttons : MonoBehaviour
         restartButton.gameObject.SetActive(false);
         victorytext.text = "Shah";
     }
+
+ 
 
 }

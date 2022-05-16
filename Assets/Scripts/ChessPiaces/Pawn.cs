@@ -9,7 +9,8 @@ public class Pawn : ChessPiece
         var steps = new List<Vector2Int>();
         var direction = team == 0 ? 1 : -1;
         
-        if (currentPos.y == (team == 0 ? 1 : 6) && board[currentPos.x,currentPos.y+direction*2] == null)
+        if (currentPos.y == (team == 0 ? 1 : 6) && board[currentPos.x,currentPos.y+direction*2] == null && 
+            board[currentPos.x,currentPos.y+direction] == null)
             steps.Add(new Vector2Int(0, direction*2));
         for (int i = -1; i <= 1; i++)
         {

@@ -21,7 +21,7 @@ public class Buttons : MonoBehaviour
     [SerializeField] private TMP_InputField addressInput;
     [SerializeField] private GameObject[] cameraAngles;
 
-    public Action<bool> setLocaleGane;
+    public Action<bool> setLocaleGame;
 
     private string[] triggers =
     {
@@ -65,7 +65,7 @@ public class Buttons : MonoBehaviour
     }
     public void OnLocaleGameButtonClick()
     {
-        setLocaleGane?.Invoke(true);
+        setLocaleGame?.Invoke(true);
         MenuAnimator.SetTrigger(triggers[3]);
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
@@ -78,7 +78,7 @@ public class Buttons : MonoBehaviour
     
     public void OnOnlineHostButtonClick()
     {
-        setLocaleGane?.Invoke(false);
+        setLocaleGame?.Invoke(false);
         server.Init(8007);
         client.Init("127.0.0.1", 8007); // Не забыть поменять
         MenuAnimator.SetTrigger(triggers[1]);
@@ -86,7 +86,7 @@ public class Buttons : MonoBehaviour
 
     public void OnOnlineConnectButtonClick()
     {
-        setLocaleGane?.Invoke(true);
+        setLocaleGame?.Invoke(false);
         client.Init(addressInput.text, 8007);
     }
 

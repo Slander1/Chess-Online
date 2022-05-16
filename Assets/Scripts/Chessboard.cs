@@ -46,7 +46,7 @@ public class Chessboard : MonoBehaviour
     private int _currentTeam = -1;
     public static event Action<int> OnCheck;
     public static event Action<int> OnMate; 
-    private bool localGame = true;
+    private bool localGame = false;
 
     private void Start()
     {
@@ -68,7 +68,7 @@ public class Chessboard : MonoBehaviour
         NetUtility.C_STARTGAME += OnStartGameClient;
         NetUtility.S_MAKE_MOVE += OnMakeMoveServer;
         NetUtility.C_MAKE_MOVE += OnMakeMoveClient;
-        Buttons.Instance.setLocaleGane += OnSetLocaleGame;
+        Buttons.Instance.setLocaleGame += OnSetLocaleGame;
     }
     
     private void UnRegisterEvents()
@@ -78,7 +78,7 @@ public class Chessboard : MonoBehaviour
         NetUtility.C_STARTGAME -= OnStartGameClient;
         NetUtility.S_MAKE_MOVE -= OnMakeMoveServer;
         NetUtility.C_MAKE_MOVE -= OnMakeMoveClient;
-        Buttons.Instance.setLocaleGane -= OnSetLocaleGame;
+        Buttons.Instance.setLocaleGame -= OnSetLocaleGame;
     }
 
     private void OnMakeMoveClient(NetMessage msg)
@@ -105,10 +105,9 @@ public class Chessboard : MonoBehaviour
     private void OnWelcomeClient(NetMessage msg)
     {
         NetWelcome netWelcome = msg as NetWelcome;
-
-        _currentTeam = netWelcome.AssignedTeam;
         
-        Debug.Log($"My assigned team is {netWelcome.AssignedTeam}");
+            _currentTeam = netWelcome.AssignedTeam;
+            Debug.Log($"My assigned team is {_currentTeam}");
 
         if (localGame && _currentTeam == 0)
         {
@@ -169,7 +168,7 @@ public class Chessboard : MonoBehaviour
 
             if (Input.GetMouseButtonDown(0) && _chessPieces[hitPosition.x, hitPosition.y] != null && 
                 Convert.ToBoolean(_chessPieces[hitPosition.x, hitPosition.y].team) == _isBlackTurn && 
-                Convert.ToBoolean(_currentTeam) != _isBlackTurn) // ?
+                Convert.ToBoolean(_currentTeam) == _isBlackTurn) 
             {
                 _currentlyDragging = _chessPieces[hitPosition.x, hitPosition.y];
                 _availableMoves = _currentlyDragging.GetAvailableMoves(_chessPieces);

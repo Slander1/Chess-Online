@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ChessPiaces;
+using Net;
+using Net.NetMassage;
 using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.UI;
+using static Net.NetUtility;
 
 public class Chessboard : MonoBehaviour
 {
@@ -18,8 +21,8 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float deadSpacing = 10f;
     [SerializeField] private float dragOffset = 1.5f;
 
-    [Header("Prefabs & Material")] [SerializeField]
-    private ChessPiece[] figurePrefabs;
+    [Header("Prefabs & Material")] 
+    [SerializeField] private ChessPiece[] figurePrefabs;
 
     [SerializeField] private Material[] teammaterials;
 
@@ -46,7 +49,8 @@ public class Chessboard : MonoBehaviour
     private int _currentTeam = -1;
     public static event Action<int> OnCheck;
     public static event Action<int> OnMate; 
-    private bool localGame = false;
+    private bool _localGame = false;
+    private static readonly int InGameMenu = Animator.StringToHash("InGameMenu");
 
     private void Start()
     {
@@ -63,21 +67,21 @@ public class Chessboard : MonoBehaviour
     #region Reg
     private void RegisterEvents()
     {
-        NetUtility.S_WELCOME += OnWelcomeServer;
-        NetUtility.C_WELCOME += OnWelcomeClient;
-        NetUtility.C_STARTGAME += OnStartGameClient;
-        NetUtility.S_MAKE_MOVE += OnMakeMoveServer;
-        NetUtility.C_MAKE_MOVE += OnMakeMoveClient;
+        SWelcome += OnWelcomeServer;
+        CWelcome += OnWelcomeClient;
+        CStartgame += OnStartGameClient;
+        SMakeMove += OnMakeMoveServer;
+        CMakeMove += OnMakeMoveClient;
         Buttons.Instance.setLocaleGame += OnSetLocaleGame;
     }
     
     private void UnRegisterEvents()
     {
-        NetUtility.S_WELCOME -= OnWelcomeServer;
-        NetUtility.C_WELCOME -= OnWelcomeClient;
-        NetUtility.C_STARTGAME -= OnStartGameClient;
-        NetUtility.S_MAKE_MOVE -= OnMakeMoveServer;
-        NetUtility.C_MAKE_MOVE -= OnMakeMoveClient;
+        SWelcome -= OnWelcomeServer;
+        CWelcome -= OnWelcomeClient;
+        CStartgame -= OnStartGameClient;
+        SMakeMove -= OnMakeMoveServer;
+        CMakeMove -= OnMakeMoveClient;
         Buttons.Instance.setLocaleGame -= OnSetLocaleGame;
     }
 
@@ -100,7 +104,7 @@ public class Chessboard : MonoBehaviour
     {
         Buttons.Instance.backGroundIMG.gameObject.SetActive(false);
         Buttons.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
-        Buttons.Instance.MenuAnimator.SetTrigger("InGameMenu");
+        Buttons.Instance.MenuAnimator.SetTrigger(InGameMenu);
     }
 
     private void OnWelcomeClient(NetMessage msg)
@@ -110,7 +114,7 @@ public class Chessboard : MonoBehaviour
             _currentTeam = netWelcome.AssignedTeam;
             Debug.Log($"My assigned team is {_currentTeam}");
 
-        if (localGame && _currentTeam == 0)
+        if (_localGame && _currentTeam == 0)
         {
             Server.Instance.Broadcast(new NetStartGame());
         }
@@ -140,7 +144,7 @@ public class Chessboard : MonoBehaviour
     
     private void OnSetLocaleGame(bool value)
     {
-        localGame = value;
+        _localGame = value;
     }
 
     private void Update()
@@ -390,7 +394,7 @@ public class Chessboard : MonoBehaviour
         PositionSinglePiaces(pos);
         
         _isBlackTurn = !_isBlackTurn;
-        if (localGame)
+        if (_localGame)
             _currentTeam = (_currentTeam == 0) ? 1 : 0;
         var turn = _isBlackTurn ? 0 : 1;
         

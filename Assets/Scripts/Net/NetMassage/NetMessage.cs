@@ -1,30 +1,31 @@
 using Unity.Networking.Transport;
 using UnityEngine;
 
-
-
-public class NetMessage : MonoBehaviour
+namespace Net.NetMassage
 {
-    public Opcode Code { set; get; }
-
-    public virtual void Serialize(ref DataStreamWriter dataStreamWriter)
+    public class NetMessage : MonoBehaviour
     {
-        dataStreamWriter.WriteByte((byte) Code);
-    }
+        public Opcode Code { set; get; }
 
-    public virtual void Desirialize(DataStreamReader dataStreamReader)
-    {
+        public virtual void Serialize(ref DataStreamWriter dataStreamWriter)
+        {
+            dataStreamWriter.WriteByte((byte) Code);
+        }
+
+        public virtual void Desirialize(DataStreamReader dataStreamReader)
+        {
         
-    }
+        }
 
-    public virtual void RecivedOnClient()
-    {
+        public virtual void RecivedOnClient()
+        {
         
-    }
+        }
 
-    public virtual void RecivedOnServer(NetworkConnection networkConnection)
-    {
+        public virtual void RecivedOnServer(NetworkConnection networkConnection)
+        {
         
-    }
+        }
 
+    }
 }

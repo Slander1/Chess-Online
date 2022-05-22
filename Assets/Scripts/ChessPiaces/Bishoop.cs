@@ -1,13 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Bishoop : Direction
+namespace ChessPiaces
 {
-    protected override List<Vector2Int> _directions => new List<Vector2Int>
+    public class Bishoop : Direction
     {
-        new Vector2Int(1, 1),
-        new Vector2Int(1, -1),
-        new Vector2Int(-1, 1),
-        new Vector2Int(-1, -1)
+        protected override List<Vector2Int> _directions => new List<Vector2Int>
+        {
+            new Vector2Int(1, 1),
+            new Vector2Int(1, -1),
+            new Vector2Int(-1, 1),
+            new Vector2Int(-1, -1)
+        };
     };
-};
+}

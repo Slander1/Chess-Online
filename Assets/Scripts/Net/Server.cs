@@ -1,147 +1,151 @@
 using System;
+using Net.NetMassage;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using UnityEngine;
 
-public class Server : MonoBehaviour
+namespace Net
 {
-    public static Server Instance { get; set; }
-    public NetworkDriver driver;
-    public Action connectionDropped;
+    public class Server : MonoBehaviour
+    {
+        public static Server Instance { get; set; }
+        public NetworkDriver driver;
+        public Action connectionDropped;
     
-    private NativeList<NetworkConnection> _connesctions;
+        private NativeList<NetworkConnection> _connesctions;
 
-    private bool _isActive = false;
-    private const float KeepAliveTickRate = 20.0f;
-    private float _lastKeepAlive;
+        private bool _isActive = false;
+        private const float KeepAliveTickRate = 20.0f;
+        private float _lastKeepAlive;
      
-    private void Awake()
-    {
-        Instance = this;
-    }
-
-    public void Init(ushort port)
-    {
-        driver = NetworkDriver.Create();
-        NetworkEndPoint endpoint = NetworkEndPoint.AnyIpv4;
-        endpoint.Port = port;
-
-        if (driver.Bind(endpoint) != 0)
+        private void Awake()
         {
-            Debug.Log("Unable to bind on port "+ endpoint.Port);   
-            return;
+            Instance = this;
         }
-        else
+
+        public void Init(ushort port)
         {
-            driver.Listen();
-            Debug.Log("Currently listening on port "+ endpoint.Port); 
+            driver = NetworkDriver.Create();
+            NetworkEndPoint endpoint = NetworkEndPoint.AnyIpv4;
+            endpoint.Port = port;
+
+            if (driver.Bind(endpoint) != 0)
+            {
+                Debug.Log("Unable to bind on port "+ endpoint.Port);   
+                return;
+            }
+            else
+            {
+                driver.Listen();
+                Debug.Log("Currently listening on port "+ endpoint.Port); 
             
-        }
+            }
         
-        _connesctions = new NativeList<NetworkConnection>(2, Allocator.Persistent);
-        _isActive = true;
-    }
-
-    public void ShutDown()
-    {
-        if (_isActive)
-        {
-            driver.Dispose();
-            _connesctions.Dispose();
-            _isActive = false;
+            _connesctions = new NativeList<NetworkConnection>(2, Allocator.Persistent);
+            _isActive = true;
         }
-    }
 
-    public void OnDestroy()
-    {
-        ShutDown();
-    }
+        public void ShutDown()
+        {
+            if (_isActive)
+            {
+                driver.Dispose();
+                _connesctions.Dispose();
+                _isActive = false;
+            }
+        }
 
-    public void Update()
-    {
-        if (!_isActive)
-            return;
+        public void OnDestroy()
+        {
+            ShutDown();
+        }
 
-        KeepAlive();
+        public void Update()
+        {
+            if (!_isActive)
+                return;
+
+            KeepAlive();
         
-        driver.ScheduleUpdate().Complete();
-        CleanupConnections();
-        AcceptNewConnections();
-        UpdateMessagePump();
-    }
-
-    private void KeepAlive()
-    {
-        if (Time.time - _lastKeepAlive > KeepAliveTickRate)
-        {
-            _lastKeepAlive = Time.time;
-            Broadcast(new NetKeepAlive());
+            driver.ScheduleUpdate().Complete();
+            CleanupConnections();
+            AcceptNewConnections();
+            UpdateMessagePump();
         }
-    }
 
-    private void UpdateMessagePump()
-    {
-        //DataStreamReader streamReader;
-        for (int i = 0; i < _connesctions.Length; i++)
+        private void KeepAlive()
         {
-            NetworkEvent.Type cmd;
-            while ((cmd = driver.PopEventForConnection(_connesctions[i],  out var streamReader) )!= NetworkEvent.Type.Empty)
+            if (Time.time - _lastKeepAlive > KeepAliveTickRate)
             {
-                if (cmd == NetworkEvent.Type.Data)
+                _lastKeepAlive = Time.time;
+                Broadcast(new NetKeepAlive());
+            }
+        }
+
+        private void UpdateMessagePump()
+        {
+            //DataStreamReader streamReader;
+            for (int i = 0; i < _connesctions.Length; i++)
+            {
+                NetworkEvent.Type cmd;
+                while ((cmd = driver.PopEventForConnection(_connesctions[i],  out var streamReader) )!= NetworkEvent.Type.Empty)
                 {
-                    NetUtility.OnData(streamReader, _connesctions[i], this);
+                    if (cmd == NetworkEvent.Type.Data)
+                    {
+                        NetUtility.OnData(streamReader, _connesctions[i], this);
+                    }
+                    else if (cmd == NetworkEvent.Type.Disconnect)
+                    {
+                        Debug.Log("Client disconected from server");
+                        _connesctions[i] = default(NetworkConnection);
+                        connectionDropped?.Invoke();
+                        ShutDown();
+                    }
                 }
-                else if (cmd == NetworkEvent.Type.Disconnect)
+            }
+        }
+
+        private void AcceptNewConnections()
+        {
+            NetworkConnection networkConnection;
+            while ((networkConnection = driver.Accept()) != default(NetworkConnection))
+                _connesctions.Add(networkConnection);
+        }
+
+        private void CleanupConnections()
+        {
+            for (int i = 0; i < _connesctions.Length; i++)
+            {
+                if (!_connesctions[i].IsCreated)
                 {
-                    Debug.Log("Client disconected from server");
-                    _connesctions[i] = default(NetworkConnection);
-                    connectionDropped?.Invoke();
-                    ShutDown();
+                    _connesctions.RemoveAtSwapBack(i);
+                    --i;
                 }
             }
         }
-    }
-
-    private void AcceptNewConnections()
-    {
-        NetworkConnection networkConnection;
-        while ((networkConnection = driver.Accept()) != default(NetworkConnection))
-            _connesctions.Add(networkConnection);
-    }
-
-    private void CleanupConnections()
-    {
-        for (int i = 0; i < _connesctions.Length; i++)
+    
+        public void SendToClient(NetworkConnection connection, NetMessage msg)
         {
-            if (!_connesctions[i].IsCreated)
+            driver.BeginSend(connection, out var streamWriter);
+            msg.Serialize(ref streamWriter);
+            driver.EndSend(streamWriter);
+
+        }
+
+        public void Broadcast(NetMessage msg)
+        {
+            for (int i = 0; i < _connesctions.Length; i++)
             {
-                _connesctions.RemoveAtSwapBack(i);
-                --i;
+                if (_connesctions[i].IsCreated)
+                {
+                    //Debug.Log($"Sending {msg.Code} to : {connesctions[i].InternalId}");
+                    SendToClient(_connesctions[i], msg);
+                }
             }
         }
-    }
-    
-    public void SendToClient(NetworkConnection connection, NetMessage msg)
-    {
-        driver.BeginSend(connection, out var streamWriter);
-        msg.Serialize(ref streamWriter);
-        driver.EndSend(streamWriter);
-
-    }
-
-    public void Broadcast(NetMessage msg)
-    {
-        for (int i = 0; i < _connesctions.Length; i++)
-        {
-            if (_connesctions[i].IsCreated)
-            {
-                //Debug.Log($"Sending {msg.Code} to : {connesctions[i].InternalId}");
-                SendToClient(_connesctions[i], msg);
-            }
-        }
-    }
     
     
 
     
+    }
 }

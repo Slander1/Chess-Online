@@ -13,6 +13,7 @@ public enum CameraAngle
 public class Buttons : MonoBehaviour
 {
     [SerializeField] private Image pauseMenu;
+    public Image backGroundIMG;
     [SerializeField] private TextMeshProUGUI victorytext;
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;
@@ -30,7 +31,6 @@ public class Buttons : MonoBehaviour
         "OnlineMenu",
         "InGameMenu"
     };
-
 
     public static Buttons Instance { set; get; }
 

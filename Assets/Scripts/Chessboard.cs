@@ -98,6 +98,7 @@ public class Chessboard : MonoBehaviour
 
     private void OnStartGameClient(NetMessage msg)
     {
+        Buttons.Instance.backGroundIMG.gameObject.SetActive(false);
         Buttons.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
         Buttons.Instance.MenuAnimator.SetTrigger("InGameMenu");
     }

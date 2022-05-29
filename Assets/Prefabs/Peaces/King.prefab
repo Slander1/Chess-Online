@@ -143,6 +143,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meshRenderer: {fileID: 5922451284327712275}
   team: 0
-  currentX: 0
-  currentY: 0
-  type: 0
+  currentPos: {x: 0, y: 0}
+  type: 6

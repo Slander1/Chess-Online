@@ -81,9 +81,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meshRenderer: {fileID: 9041344527395251429}
   team: 0
-  currentX: 0
-  currentY: 0
-  type: 0
+  currentPos: {x: 0, y: 0}
+  type: 1
 --- !u!1001 &9041344527397551237
 PrefabInstance:
   m_ObjectHideFlags: 0

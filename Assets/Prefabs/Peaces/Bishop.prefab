@@ -129,6 +129,19 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3593027041853949493, guid: d09d7ee853493dd4384b3d454a569b48, type: 3}
   m_PrefabInstance: {fileID: 7563692726870999205}
   m_PrefabAsset: {fileID: 0}
+--- !u!65 &8445971019738699571
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6425332076996314768}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 8.108645, z: 3.990434}
+  m_Center: {x: 0, y: 3.5543227, z: 0.016409516}
 --- !u!114 &7420198226393000165
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,6 +156,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meshRenderer: {fileID: 2445471778023251870}
   team: 0
-  currentX: 0
-  currentY: 0
-  type: 0
+  currentPos: {x: 0, y: 0}
+  type: 4

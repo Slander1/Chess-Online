@@ -5,6 +5,7 @@ using ChessPiaces;
 using Net;
 using Net.NetMassage;
 using Unity.Networking.Transport;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Net.NetUtility;
@@ -20,19 +21,21 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float deadScale = 0.8f;
     [SerializeField] private float deadSpacing = 10f;
     [SerializeField] private float dragOffset = 1.5f;
+    [SerializeField] private ChessPiecesChoseSelector _choseSelector; 
 
-    [Header("Prefabs & Material")] 
-    [SerializeField] private ChessPiece[] figurePrefabs;
+    [Header("Prefabs & Material")] [SerializeField]
+    private ChessPiece[] figurePrefabs;
 
-    [SerializeField] private Material[] teammaterials;
+    [SerializeField] private Material[] teamMaterials;
 
-    
+
     public static readonly int TILE_COUNT_X = 8;
-    public static readonly  int TILE_COUNT_Y = 8;
-    
+    public static readonly int TILE_COUNT_Y = 8;
+
     private const string HOVER = "Hover";
     private const string TILE = "Tile";
     private const string HIGLIGHT = "Hightlight";
+    
 
     private List<ChessPiece> _deadWhite = new List<ChessPiece>();
     private List<ChessPiece> _deadBlack = new List<ChessPiece>();
@@ -47,8 +50,11 @@ public class Chessboard : MonoBehaviour
     private bool _isBlackTurn;
     private int _playerCount = -1;
     private int _currentTeam = -1;
+    private Vector2Int _swapPawn = new Vector2Int(-1, -1);
+    
+    private bool _swapPiace = false;
     public static event Action<int> OnCheck;
-    public static event Action<int> OnMate; 
+    public static event Action<int> OnMate;
     private bool _localGame = false;
     private static readonly int InGameMenu = Animator.StringToHash("InGameMenu");
 
@@ -65,6 +71,7 @@ public class Chessboard : MonoBehaviour
     }
 
     #region Reg
+
     private void RegisterEvents()
     {
         SWelcome += OnWelcomeServer;
@@ -72,9 +79,34 @@ public class Chessboard : MonoBehaviour
         CStartgame += OnStartGameClient;
         SMakeMove += OnMakeMoveServer;
         CMakeMove += OnMakeMoveClient;
+        CChosePieceOnChange += OnChosePieceClient;
+        SChosePieceOnChange += OnChosePiaceServer;
         Buttons.Instance.setLocaleGame += OnSetLocaleGame;
+        
     }
-    
+
+    private void OnChosePiaceServer(NetMessage msg, NetworkConnection networkConnection)
+    {
+        NetChosePiece netChosePiece = msg as NetChosePiece;
+        Server.Instance.Broadcast(netChosePiece);
+       
+    }
+
+    private void OnChosePieceClient(NetMessage msg)
+    {
+        NetChosePiece netChosePiece = msg as NetChosePiece;
+        if (netChosePiece.teamId != _currentTeam)
+        {
+            _choseSelector.SpawnPiecesForChoose(teamMaterials[_currentTeam], type =>
+            {
+                var piece = SpawnSinglePeace(netChosePiece.type, _currentTeam);
+                _chessPieces[netChosePiece.pos.x, netChosePiece.pos.y] = piece;
+                SetPiecePos(netChosePiece.pos, true);
+                piece.currentPos = netChosePiece.pos;
+            });
+        }
+    }
+
     private void UnRegisterEvents()
     {
         SWelcome -= OnWelcomeServer;
@@ -82,13 +114,15 @@ public class Chessboard : MonoBehaviour
         CStartgame -= OnStartGameClient;
         SMakeMove -= OnMakeMoveServer;
         CMakeMove -= OnMakeMoveClient;
+        CChosePieceOnChange += OnChosePieceClient;
+        SChosePieceOnChange += OnChosePiaceServer;
         Buttons.Instance.setLocaleGame -= OnSetLocaleGame;
     }
 
     private void OnMakeMoveClient(NetMessage msg)
     {
         NetMakeMove makeMove = msg as NetMakeMove;
-        
+
         Debug.Log($"MM : {makeMove.teamId} : {makeMove.originalMove} -> {makeMove.distanationMove}");
 
         if (makeMove.teamId != _currentTeam)
@@ -110,9 +144,9 @@ public class Chessboard : MonoBehaviour
     private void OnWelcomeClient(NetMessage msg)
     {
         NetWelcome netWelcome = msg as NetWelcome;
-        
-            _currentTeam = netWelcome.AssignedTeam;
-            Debug.Log($"My assigned team is {_currentTeam}");
+
+        _currentTeam = netWelcome.AssignedTeam;
+        Debug.Log($"My assigned team is {_currentTeam}");
 
         if (_localGame && _currentTeam == 0)
         {
@@ -120,8 +154,6 @@ public class Chessboard : MonoBehaviour
         }
     }
 
-
-    
 
     private void OnMakeMoveServer(NetMessage msg, NetworkConnection networkConnection)
     {
@@ -134,14 +166,15 @@ public class Chessboard : MonoBehaviour
         NetWelcome netWelcome = msg as NetWelcome;
 
         netWelcome.AssignedTeam = ++_playerCount;
-        
+
         Server.Instance.SendToClient(networkConnection, netWelcome);
 
         if (_playerCount == 1)
             Server.Instance.Broadcast(new NetStartGame());
     }
+
     #endregion
-    
+
     private void OnSetLocaleGame(bool value)
     {
         _localGame = value;
@@ -171,9 +204,9 @@ public class Chessboard : MonoBehaviour
                 _tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(HOVER);
             }
 
-            if (Input.GetMouseButtonDown(0) && _chessPieces[hitPosition.x, hitPosition.y] != null && 
-                Convert.ToBoolean(_chessPieces[hitPosition.x, hitPosition.y].team) == _isBlackTurn && 
-                Convert.ToBoolean(_currentTeam) == _isBlackTurn) 
+            if (Input.GetMouseButtonDown(0) && _chessPieces[hitPosition.x, hitPosition.y] != null &&
+                Convert.ToBoolean(_chessPieces[hitPosition.x, hitPosition.y].team) == _isBlackTurn &&
+                Convert.ToBoolean(_currentTeam) == _isBlackTurn)
             {
                 _currentlyDragging = _chessPieces[hitPosition.x, hitPosition.y];
                 _availableMoves = _currentlyDragging.GetAvailableMoves(_chessPieces);
@@ -182,12 +215,12 @@ public class Chessboard : MonoBehaviour
 
             if (_currentlyDragging != null && Input.GetMouseButtonUp(0))
             {
-             
                 var lastPosition = _currentlyDragging.currentPos;
 
-                if (_availableMoves.Contains(hitPosition)){
+                if (_availableMoves.Contains(hitPosition))
+                {
                     MoveTo(lastPosition, hitPosition);
-                    
+
                     NetMakeMove makeMove = new NetMakeMove();
                     makeMove.originalMove = lastPosition;
                     makeMove.distanationMove = hitPosition;
@@ -196,11 +229,10 @@ public class Chessboard : MonoBehaviour
                 }
                 else
                 {
-                    _currentlyDragging.SetPosition(GetTileCenter(lastPosition));
+                    _currentlyDragging.AnimateMove(GetTileCenter(lastPosition));
                     _currentlyDragging = null;
                     RemoveHighlightTiles();
                 }
-                
             }
         }
         else
@@ -216,21 +248,25 @@ public class Chessboard : MonoBehaviour
 
             if (_currentlyDragging && Input.GetMouseButtonUp(0))
             {
-                _currentlyDragging.SetPosition(GetTileCenter(_currentlyDragging.currentPos));
+                _currentlyDragging.AnimateMove(GetTileCenter(_currentlyDragging.currentPos));
                 _currentlyDragging = null;
                 RemoveHighlightTiles();
             }
         }
+
 
         if (_currentlyDragging)
         {
             var horizontalPlane = new Plane(Vector3.up, Vector3.up * yOffset);
             if (horizontalPlane.Raycast(ray, out var distance))
             {
-                _currentlyDragging.SetPosition(ray.GetPoint(distance) + Vector3.up * dragOffset);
+                _currentlyDragging.AnimateMove(ray.GetPoint(distance) + Vector3.up * dragOffset);
             }
         }
     }
+
+    
+
 
     private void GenerateAllTiles(float tileSize, int tileCountX, int tileCountY)
     {
@@ -276,34 +312,37 @@ public class Chessboard : MonoBehaviour
     {
         _chessPieces = new ChessPiece[TILE_COUNT_X, TILE_COUNT_Y];
         int whiteTeam = 0, blackTeam = 1;
-        _chessPieces[0, 0] = SpawnSinglePeace(ChessPieceType.Rook, whiteTeam);
-        _chessPieces[1, 0] = SpawnSinglePeace(ChessPieceType.Knight, whiteTeam);
-        _chessPieces[2, 0] = SpawnSinglePeace(ChessPieceType.Bishop, whiteTeam);
-        _chessPieces[3, 0] = SpawnSinglePeace(ChessPieceType.Queen, whiteTeam);
-        _chessPieces[4, 0] = SpawnSinglePeace(ChessPieceType.King, whiteTeam);       
-        _chessPieces[5, 0] = SpawnSinglePeace(ChessPieceType.Bishop, whiteTeam);
-        _chessPieces[6, 0] = SpawnSinglePeace(ChessPieceType.Knight, whiteTeam);
-        _chessPieces[7, 0] = SpawnSinglePeace(ChessPieceType.Rook, whiteTeam);
-        for (int i = 0; i < TILE_COUNT_X; i++)
-            _chessPieces[i, 1] = SpawnSinglePeace(ChessPieceType.Pawn, whiteTeam);
-        _chessPieces[0, 7] = SpawnSinglePeace(ChessPieceType.Rook, blackTeam);
-        _chessPieces[1, 7] = SpawnSinglePeace(ChessPieceType.Knight, blackTeam);
-        _chessPieces[2, 7] = SpawnSinglePeace(ChessPieceType.Bishop, blackTeam);
-        _chessPieces[4, 7] = SpawnSinglePeace(ChessPieceType.King, blackTeam);
-        _chessPieces[3, 7] = SpawnSinglePeace(ChessPieceType.Queen, blackTeam);
-        _chessPieces[5, 7] = SpawnSinglePeace(ChessPieceType.Bishop, blackTeam);
-        _chessPieces[6, 7] = SpawnSinglePeace(ChessPieceType.Knight, blackTeam);
-        _chessPieces[7, 7] = SpawnSinglePeace(ChessPieceType.Rook, blackTeam);
-        for (int i = 0; i < TILE_COUNT_X; i++)
-            _chessPieces[i, 6] = SpawnSinglePeace(ChessPieceType.Pawn, blackTeam);
+        /* _chessPieces[0, 0] = SpawnSinglePeace(ChessPieceType.Rook, whiteTeam);
+         _chessPieces[1, 0] = SpawnSinglePeace(ChessPieceType.Knight, whiteTeam);
+         _chessPieces[2, 0] = SpawnSinglePeace(ChessPieceType.Bishop, whiteTeam);
+         _chessPieces[3, 0] = SpawnSinglePeace(ChessPieceType.Queen, whiteTeam);
+         _chessPieces[4, 0] = SpawnSinglePeace(ChessPieceType.King, whiteTeam);       
+         _chessPieces[5, 0] = SpawnSinglePeace(ChessPieceType.Bishop, whiteTeam);
+         _chessPieces[6, 0] = SpawnSinglePeace(ChessPieceType.Knight, whiteTeam);
+         _chessPieces[7, 0] = SpawnSinglePeace(ChessPieceType.Rook, whiteTeam);
+         for (int i = 0; i < TILE_COUNT_X; i++)
+             _chessPieces[i, 1] = SpawnSinglePeace(ChessPieceType.Pawn, whiteTeam);
+ /* _chessPieces[0, 7] = SpawnSinglePeace(ChessPieceType.Rook, blackTeam);
+  _chessPieces[1, 7] = SpawnSinglePeace(ChessPieceType.Knight, blackTeam);
+  _chessPieces[2, 7] = SpawnSinglePeace(ChessPieceType.Bishop, blackTeam);
+  _chessPieces[4, 7] = SpawnSinglePeace(ChessPieceType.King, blackTeam);
+  _chessPieces[3, 7] = SpawnSinglePeace(ChessPieceType.Queen, blackTeam);
+  _chessPieces[5, 7] = SpawnSinglePeace(ChessPieceType.Bishop, blackTeam);
+  _chessPieces[6, 7] = SpawnSinglePeace(ChessPieceType.Knight, blackTeam);
+  _chessPieces[7, 7] = SpawnSinglePeace(ChessPieceType.Rook, blackTeam);
+  for (int i = 0; i < TILE_COUNT_X; i++)
+      _chessPieces[i, 6] = SpawnSinglePeace(ChessPieceType.Pawn, blackTeam);*/
+        _chessPieces[4, 0] = SpawnSinglePeace(ChessPiece.Type.King, whiteTeam);
+        _chessPieces[4, 7] = SpawnSinglePeace(ChessPiece.Type.King, blackTeam);
+        _chessPieces[0, 1] = SpawnSinglePeace(ChessPiece.Type.Pawn, blackTeam);
     }
 
-    private ChessPiece SpawnSinglePeace(ChessPieceType type, int team)
+    private ChessPiece SpawnSinglePeace(ChessPiece.Type type, int team)
     {
-        ChessPiece cp = Instantiate(figurePrefabs[(int) type - 1], transform).GetComponent<ChessPiece>();
+        var cp = Instantiate(figurePrefabs[(int) type - 1], transform);
         cp.type = type;
         cp.team = team;
-        cp.meshRenderer.material = teammaterials[team];
+        cp.meshRenderer.material = teamMaterials[team];
         return cp;
     }
 
@@ -313,13 +352,13 @@ public class Chessboard : MonoBehaviour
         for (int x = 0; x < TILE_COUNT_X; x++)
         for (int y = 0; y < TILE_COUNT_Y; y++)
             if (_chessPieces[x, y] != null)
-                PositionSinglePiaces(new Vector2Int(x, y), true);
+                SetPiecePos(new Vector2Int(x, y), true);
     }
 
-    private void PositionSinglePiaces(Vector2Int pos, bool force = false)
+    private void SetPiecePos(Vector2Int pos, bool force = false)
     {
         _chessPieces[pos.x, pos.y].currentPos = pos;
-        _chessPieces[pos.x, pos.y].SetPosition(GetTileCenter(pos), force);
+        _chessPieces[pos.x, pos.y].AnimateMove(GetTileCenter(pos), force);
     }
 
     private Vector3 GetTileCenter(Vector2Int pos)
@@ -355,49 +394,72 @@ public class Chessboard : MonoBehaviour
         return -Vector2Int.one;
     }
 
-    private void MoveTo(Vector2Int originalCoord, in Vector2Int pos)
+    
+
+    private void MoveTo(Vector2Int originalCoord, Vector2Int pos)
     {
-        
-        ChessPiece currentlyDragging = _chessPieces[originalCoord.x, originalCoord.y]; 
+        ChessPiece currentlyDragging = _chessPieces[originalCoord.x, originalCoord.y];
         if (_chessPieces[pos.x, pos.y] != null)
         {
             ChessPiece otherChessPiaces = _chessPieces[pos.x, pos.y];
-            if (otherChessPiaces.team ==  currentlyDragging.team)
+            if (otherChessPiaces.team == currentlyDragging.team)
             {
                 return;
             }
-
             var isFirstTeam = otherChessPiaces.team == 0;
             var chessPiecesDirection = isFirstTeam ? 1 : -1;
-            var startPositionShiftX = new[]{ -0.7f, TILE_COUNT_X - 0.3f};
-            var startPositionShiftZ = new[]{ 0, TILE_COUNT_X -1};
+            var startPositionShiftX = new[] {-0.7f, TILE_COUNT_X - 0.3f};
+            var startPositionShiftZ = new[] {0, TILE_COUNT_X - 1};
             var deadTeam = isFirstTeam ? _deadWhite : _deadBlack;
 
             var boardSize = new Vector3(tileSize * 0.5f, 0, tileSize * 0.5f) - _bounds;
             var shift = Vector3.forward * (chessPiecesDirection * deadSpacing * deadTeam.Count);
             otherChessPiaces.SetScale(Vector3.one * deadScale);
-            
+
             var startPosition = new Vector3(
                 startPositionShiftX[isFirstTeam ? 1 : 0] * tileSize,
                 yOffset,
                 startPositionShiftZ[isFirstTeam ? 0 : 1] * tileSize);
-            
+
             deadTeam.Add(otherChessPiaces);
-            
-            otherChessPiaces.SetPosition(startPosition + boardSize + shift);
+
+            otherChessPiaces.AnimateMove(startPosition + boardSize + shift);
         }
 
         var lastPosition = currentlyDragging.currentPos;
         _chessPieces[pos.x, pos.y] = currentlyDragging;
         _chessPieces[lastPosition.x, lastPosition.y] = null;
+        var thisTeam = _chessPieces[pos.x, pos.y].team;
+        SetPiecePos(pos);
+        if (_chessPieces[pos.x, pos.y] is Pawn pawn && ((thisTeam == 0 && pos.y == 7) || (thisTeam == 1 && pos.y == 0)) &&
+            Convert.ToBoolean(_currentTeam) == _isBlackTurn)
+        {
+            Buttons.Instance.ChangeCamera(CameraAngle.menu);
+            _choseSelector.SpawnPiecesForChoose(teamMaterials[thisTeam], type =>
+            {
+                Buttons.Instance.ChangeCamera((_currentTeam == 0 || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+                var piece = SpawnSinglePeace(type, _currentTeam);
+                _chessPieces[pos.x, pos.y] = piece;
+                SetPiecePos(pos, true);
+                piece.currentPos = pos;
+                ChangeTurn();
+            });
+            _swapPawn = pawn.currentPos;
+            Destroy(pawn.gameObject);
+            _swapPiace = false;
+           
+            return;
+        }
+        ChangeTurn();
+    }
 
-        PositionSinglePiaces(pos);
-        
+    private void ChangeTurn()
+    {
         _isBlackTurn = !_isBlackTurn;
         if (_localGame)
             _currentTeam = (_currentTeam == 0) ? 1 : 0;
         var turn = _isBlackTurn ? 0 : 1;
-        
+
         if (_currentlyDragging)
             _currentlyDragging = null;
         RemoveHighlightTiles();
@@ -407,12 +469,13 @@ public class Chessboard : MonoBehaviour
             OnMate?.Invoke(turn);
             return;
         }
-        if (IsKingUnderAttack(_chessPieces,turn == 0? 1:0))
+
+        if (IsKingUnderAttack(_chessPieces, turn == 0 ? 1 : 0))
         {
             OnCheck?.Invoke(turn);
         }
-        return;
     }
+    
 
     public static bool IsKingUnderAttack(ChessPiece[,] board, int team)
     {
@@ -433,7 +496,7 @@ public class Chessboard : MonoBehaviour
             if (chessPiece.GetMoves(board).Contains(ourKing.currentPos))
                 return true;
         }
-        
+
         return false;
     }
 

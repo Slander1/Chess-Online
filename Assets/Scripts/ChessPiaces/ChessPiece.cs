@@ -1,28 +1,27 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace ChessPiaces
 {
-    public enum ChessPieceType
-    {
-        None = 0,
-        Pawn = 1,
-        Rook = 2,
-        Knight = 3,
-        Bishop = 4,
-        Queen = 5,
-        King = 6
-    }
-
-
+    
     public abstract class ChessPiece : MonoBehaviour
     {
+        public enum Type
+        {
+            None = 0,
+            Pawn = 1,
+            Rook = 2,
+            Knight = 3,
+            Bishop = 4,
+            Queen = 5,
+            King = 6
+        }
         public MeshRenderer meshRenderer;
         public int team;
         public Vector2Int currentPos;
-        public ChessPieceType type;
-    
+        public Type type;
 
         private Vector3 desiredPosition;
         private Vector3 desiredScale = Vector3.one;
@@ -74,7 +73,7 @@ namespace ChessPiaces
 
     
     
-        public void SetPosition(Vector3 position, bool force = false)
+        public void AnimateMove(Vector3 position, bool force = false)
         {
             desiredPosition = position;
             if (force)

@@ -1,7 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Net;
 using Net.NetMassage;
 using Unity.Networking.Transport;
 using UnityEngine;
@@ -14,7 +11,8 @@ namespace Net
         WELCOME = 2,
         START_GAME = 3,
         MAKE_MOVE = 4,
-        REMATCH = 5
+        REMATCH = 5,
+        CHOSEPIECEONCHANGE = 6
     }
 
     public static class NetUtility
@@ -24,11 +22,13 @@ namespace Net
         public static Action<NetMessage> CStartgame;
         public static Action<NetMessage> CMakeMove;
         public static Action<NetMessage> CRematch;
+        public static Action<NetMessage> CChosePieceOnChange;
         public static Action<NetMessage, NetworkConnection> SKeepAlive;
         public static Action<NetMessage, NetworkConnection> SWelcome;
         public static Action<NetMessage, NetworkConnection> SStartgame;
         public static Action<NetMessage, NetworkConnection> SMakeMove;
         public static Action<NetMessage, NetworkConnection> SRematch;
+        public static Action<NetMessage, NetworkConnection> SChosePieceOnChange;
 
 
         public static void OnData(DataStreamReader dataStreamReader, NetworkConnection networkConnection,
@@ -49,6 +49,9 @@ namespace Net
                     break;
                 case Opcode.MAKE_MOVE:
                     msg = new NetMakeMove(dataStreamReader);
+                    break;
+                case Opcode.CHOSEPIECEONCHANGE:
+                    msg = new NetChosePiece(dataStreamReader);
                     break;
                 /*case Opcode.REMATCH:msg = new NetRematch(dataStreamReader); break;*/
                 default:

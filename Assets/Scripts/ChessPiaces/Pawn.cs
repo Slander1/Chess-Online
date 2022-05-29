@@ -23,6 +23,5 @@ namespace ChessPiaces
             }
             return steps;
         }
-
     }
 }

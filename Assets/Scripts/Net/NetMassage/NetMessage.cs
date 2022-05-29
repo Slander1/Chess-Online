@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Net.NetMassage
 {
-    public class NetMessage : MonoBehaviour
+    public class NetMessage
     {
         public Opcode Code { set; get; }
 

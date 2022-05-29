@@ -89,22 +89,16 @@ public class Chessboard : MonoBehaviour
     {
         NetChosePiece netChosePiece = msg as NetChosePiece;
         Server.Instance.Broadcast(netChosePiece);
-       
     }
 
     private void OnChosePieceClient(NetMessage msg)
     {
         NetChosePiece netChosePiece = msg as NetChosePiece;
-        if (netChosePiece.teamId != _currentTeam)
-        {
-            _choseSelector.SpawnPiecesForChoose(teamMaterials[_currentTeam], type =>
-            {
-                var piece = SpawnSinglePeace(netChosePiece.type, _currentTeam);
-                _chessPieces[netChosePiece.pos.x, netChosePiece.pos.y] = piece;
-                SetPiecePos(netChosePiece.pos, true);
-                piece.currentPos = netChosePiece.pos;
-            });
-        }
+        Destroy(_chessPieces[netChosePiece.pos.x, netChosePiece.pos.y].gameObject);
+        var piece = SpawnSinglePeace(netChosePiece.type, netChosePiece.teamId);
+        _chessPieces[netChosePiece.pos.x, netChosePiece.pos.y] = piece;
+        SetPiecePos(netChosePiece.pos, true);
+        piece.currentPos = netChosePiece.pos;
     }
 
     private void UnRegisterEvents()
@@ -442,12 +436,13 @@ public class Chessboard : MonoBehaviour
                 _chessPieces[pos.x, pos.y] = piece;
                 SetPiecePos(pos, true);
                 piece.currentPos = pos;
+                var chosePiece = new NetChosePiece {type = type, pos = pos, teamId = _currentTeam};
+                Client.Instance.SendToServer(chosePiece);
                 ChangeTurn();
             });
-            _swapPawn = pawn.currentPos;
             Destroy(pawn.gameObject);
+            _swapPawn = pawn.currentPos;
             _swapPiace = false;
-           
             return;
         }
         ChangeTurn();

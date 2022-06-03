@@ -23,16 +23,16 @@ namespace ChessPiaces
         public Vector2Int currentPos;
         public Type type;
 
-        private Vector3 desiredPosition;
-        private Vector3 desiredScale = Vector3.one;
+        private Vector3 _desiredPosition;
+        private Vector3 _desiredScale = Vector3.one;
         
     
         protected abstract List<Vector2Int> GetSteps(ChessPiece[,] board);
 
         private void Update()
         {
-            transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * 10);
-            transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * 10);
+            transform.position = Vector3.Lerp(transform.position, _desiredPosition, Time.deltaTime * 10);
+            transform.localScale = Vector3.Lerp(transform.localScale, _desiredScale, Time.deltaTime * 10);
         }
 
         public List<Vector2Int> GetMoves(ChessPiece[,] board)
@@ -75,16 +75,16 @@ namespace ChessPiaces
     
         public void AnimateMove(Vector3 position, bool force = false)
         {
-            desiredPosition = position;
+            _desiredPosition = position;
             if (force)
-                transform.position = desiredPosition;
+                transform.position = _desiredPosition;
         }
     
         public void SetScale(Vector3 scale, bool force = false)
         {
-            desiredScale = scale;
+            _desiredScale = scale;
             if (force)
-                transform.localScale = desiredScale;
+                transform.localScale = _desiredScale;
         }
         protected static bool CheckBoard(int x, int y)
         {

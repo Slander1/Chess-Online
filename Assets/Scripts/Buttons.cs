@@ -1,5 +1,6 @@
 using System;
 using Net;
+using Net.NetMassage;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,17 +14,23 @@ public enum CameraAngle
 
 public class Buttons : MonoBehaviour
 {
-    [SerializeField] private Image pauseMenu;
+    public Button pauseButton;
+    public Image pauseMenu;
     public Image backGroundIMG;
+    public Animator MenuAnimator;
+    public TMP_Text textRemach;
+    
     [SerializeField] private TextMeshProUGUI victorytext;
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button exitButton;
-    public Animator MenuAnimator;
     [SerializeField] private TMP_InputField addressInput;
     [SerializeField] private GameObject[] cameraAngles;
 
+    
     public Action<bool> setLocaleGame;
+    public Action<bool> onPauseResumeButtonClick;
+    public Action onRestartButtonClick;
 
     private string[] triggers =
     {
@@ -45,7 +52,7 @@ public class Buttons : MonoBehaviour
 
     public void ChangeCamera(CameraAngle index)
     {
-        for (int i = 0; i < cameraAngles.Length; i++)
+        for (var i = 0; i < cameraAngles.Length; i++)
         {
             cameraAngles[i].SetActive(false);
         }
@@ -81,7 +88,7 @@ public class Buttons : MonoBehaviour
     {
         setLocaleGame?.Invoke(false);
         server.Init(8007);
-        client.Init("127.0.0.1", 8007); // Не забыть поменять
+        client.Init("127.0.0.1", 8007);
         MenuAnimator.SetTrigger(triggers[1]);
     }
 
@@ -108,16 +115,23 @@ public class Buttons : MonoBehaviour
         resumeButton.gameObject.SetActive(true);
         exitButton.gameObject.SetActive(true);
         restartButton.gameObject.SetActive(true);
+        onPauseResumeButtonClick?.Invoke(true);
     }
 
-    public void OnResumeClick()
+    private void OnResumeClick()
     {
         pauseMenu.gameObject.SetActive(false);
+        onPauseResumeButtonClick?.Invoke(false);
     }
 
     public void OnExitClick()
     {
         Application.Quit();
+    }
+
+    public void OnRestartButtonClick()
+    {
+        onRestartButtonClick?.Invoke();
     }
 
     public void Victory(int team)
@@ -133,9 +147,14 @@ public class Buttons : MonoBehaviour
         resumeButton.gameObject.SetActive(true);
         exitButton.gameObject.SetActive(false);
         restartButton.gameObject.SetActive(false);
-        victorytext.text = "Shah";
+        victorytext.text = "Check";
     }
 
- 
 
+    public void OnLeaveFromGameMenu()
+    {
+        ChangeCamera(0);
+        MenuAnimator.SetTrigger(triggers[0]);
+        
+    }
 }

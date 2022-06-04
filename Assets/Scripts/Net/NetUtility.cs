@@ -53,7 +53,7 @@ namespace Net
                 case Opcode.CHOSEPIECEONCHANGE:
                     msg = new NetChosePiece(dataStreamReader);
                     break;
-                /*case Opcode.REMATCH:msg = new NetRematch(dataStreamReader); break;*/
+                case Opcode.REMATCH:msg = new NetRematch(dataStreamReader); break;
                 default:
                     Debug.LogError("Message recived had no OpCode");
                     break;

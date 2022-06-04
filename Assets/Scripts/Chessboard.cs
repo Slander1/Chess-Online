@@ -7,6 +7,7 @@ using Net.NetMassage;
 using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 using static Net.NetUtility;
 
 public class Chessboard : MonoBehaviour
@@ -50,11 +51,10 @@ public class Chessboard : MonoBehaviour
     private int _playerCount = -1;
     private int _currentTeam = -1;
     private Vector2Int _swapPawn = new Vector2Int(-1, -1);
-    
-    private bool _swapPiece = false;
     public static event Action<int> OnCheck;
     public static event Action<int> OnMate;
     private bool _localGame = false;
+    private bool[] _playerRematch = new bool[2];
     private static readonly int InGameMenu = Animator.StringToHash("InGameMenu");
 
     private void Start()
@@ -80,8 +80,74 @@ public class Chessboard : MonoBehaviour
         CMakeMove += OnMakeMoveClient;
         CChosePieceOnChange += OnChosePieceClient;
         SChosePieceOnChange += OnChosePieceServer;
+        SRematch += OnRematchServer;
+        CRematch += OnRematchClient;
         Buttons.Instance.setLocaleGame += OnSetLocaleGame;
+        Buttons.Instance.onPauseResumeButtonClick += InPauseButton;
+        Buttons.Instance.onRestartButtonClick += OnRestartButtonClick;
         
+    }
+    
+    private void OnRematchServer(NetMessage msg, NetworkConnection networkConnection)
+    {
+        Server.Instance.Broadcast(msg);
+    }
+    private void OnRematchClient(NetMessage msg)
+    {
+        var rematch = msg as NetRematch;
+        _playerRematch[rematch.teamId] = rematch.wantRematch == 1;
+        
+        if (rematch.teamId != _currentTeam)
+            Buttons.Instance.textRemach.gameObject.SetActive(true);
+
+        if (_playerRematch[0] && _playerRematch[1])
+            OnRestartButtonClick();
+    }
+
+    private void OnRestartButtonClick()
+    {
+        _currentlyDragging = null;
+        _availableMoves.Clear();
+        Buttons.Instance.textRemach.gameObject.SetActive(false);
+        _playerRematch[0] = _playerRematch[1] = false; 
+        foreach (var item in _deadWhite)
+        {
+            Destroy(item.gameObject);
+        }
+        foreach (var item in _deadBlack)
+        {
+            Destroy(item.gameObject);
+        }
+        _deadBlack.Clear();
+        _deadWhite.Clear();
+        _availableMoves.Clear();
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (_chessPieces[i,j] != null)
+                    Destroy(_chessPieces[i,j].gameObject);
+                _chessPieces[i, j] = null;
+            }
+        }
+
+        SpawnAllPieces();
+        PositionAllPieces();
+        _isBlackTurn = false;
+        Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame)|| _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+        Buttons.Instance.pauseMenu.gameObject.SetActive(false);
+    }
+
+    private void RestartGame()
+    {
+       
+    }
+    private void InPauseButton(bool pause)
+    {
+        if (pause)
+            Buttons.Instance.ChangeCamera(0);
+        else
+            Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame)|| _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
     }
 
     private void OnChosePieceServer(NetMessage msg, NetworkConnection networkConnection)
@@ -109,7 +175,10 @@ public class Chessboard : MonoBehaviour
         CMakeMove -= OnMakeMoveClient;
         CChosePieceOnChange += OnChosePieceClient;
         SChosePieceOnChange += OnChosePieceServer;
+        SRematch -= OnRematchServer;
+        CRematch -= OnRematchClient;
         Buttons.Instance.setLocaleGame -= OnSetLocaleGame;
+        Buttons.Instance.onPauseResumeButtonClick -= InPauseButton;
     }
 
     private void OnMakeMoveClient(NetMessage msg)
@@ -129,8 +198,9 @@ public class Chessboard : MonoBehaviour
         Buttons.Instance.backGroundIMG.gameObject.SetActive(false);
         Buttons.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
         Buttons.Instance.MenuAnimator.SetTrigger(InGameMenu);
+        Buttons.Instance.pauseButton.gameObject.SetActive(true);
     }
-
+    
     private void OnWelcomeClient(NetMessage msg)
     {
         var netWelcome = msg as NetWelcome;
@@ -155,6 +225,43 @@ public class Chessboard : MonoBehaviour
         Server.Instance.SendToClient(networkConnection, netWelcome);
         if (_playerCount == 1)
             Server.Instance.Broadcast(new NetStartGame());
+    }
+    public void OnRematchButton()
+    {
+        if (_localGame)
+        {
+            var rematchwhite = new NetRematch();
+            rematchwhite.teamId = 0;
+            rematchwhite.wantRematch = 1;
+            Client.Instance.SendToServer(rematchwhite);
+            
+            var rematchBlack = new NetRematch();
+            rematchBlack.teamId = 1;
+            rematchBlack.wantRematch = 1;
+            Client.Instance.SendToServer(rematchBlack);
+            
+        }
+        else
+        {
+            var rematch = new NetRematch();
+            rematch.teamId = _currentTeam;
+            rematch.wantRematch = 1;
+            Client.Instance.SendToServer(rematch);
+        }
+    }
+
+    public void OnMenuButton()
+    {
+        var rematch = new NetRematch();
+        rematch.teamId = _currentTeam;
+        rematch.wantRematch = 0;
+        Client.Instance.SendToServer(rematch);
+        OnRestartButtonClick();
+        Buttons.Instance.OnLeaveFromGameMenu();
+        Client.Instance.ShutDown();
+        Server.Instance.ShutDown();
+        _playerCount = -1;
+        _currentTeam = -1;
     }
 
     #endregion
@@ -259,6 +366,7 @@ public class Chessboard : MonoBehaviour
         for (var y = 0; y < tileCountY; y++)
             _tiles[x, y] = GenerateSingleTile(tileSize, x, y);
     }
+    
 
     private GameObject GenerateSingleTile(float tileSize, int x, int y)
     {
@@ -421,7 +529,6 @@ public class Chessboard : MonoBehaviour
             });
             Destroy(pawn.gameObject);
             _swapPawn = pawn.currentPos;
-            _swapPiece = false;
             return;
         }
         ChangeTurn();

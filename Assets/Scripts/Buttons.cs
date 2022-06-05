@@ -155,6 +155,9 @@ public class Buttons : MonoBehaviour
 
     public void OnLeaveFromGameMenu()
     {
+        pauseMenu.gameObject.SetActive(false);
+        textQuit.gameObject.SetActive(false);
+        textRemach.gameObject.SetActive(false);
         ChangeCamera(0);
         MenuAnimator.SetTrigger(triggers[0]);
         

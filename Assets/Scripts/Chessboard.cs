@@ -12,7 +12,9 @@ using static Net.NetUtility;
 
 public class Chessboard : MonoBehaviour
 {
-    [FormerlySerializedAs("_tileMaterial")] [Header("Art stuff")] [SerializeField]
+    [FormerlySerializedAs("_tileMaterial")]
+    [Header("Art stuff")]
+    [SerializeField]
     private Material tileMaterial;
 
     [SerializeField] private float tileSize = 1.0f;
@@ -21,9 +23,10 @@ public class Chessboard : MonoBehaviour
     [SerializeField] private float deadScale = 0.8f;
     [SerializeField] private float deadSpacing = 10f;
     [SerializeField] private float dragOffset = 1.5f;
-    [SerializeField] private ChessPiecesChoseSelector choseSelector; 
+    [SerializeField] private ChessPiecesChoseSelector choseSelector;
 
-    [Header("Prefabs & Material")] [SerializeField]
+    [Header("Prefabs & Material")]
+    [SerializeField]
     private ChessPiece[] figurePrefabs;
 
     [SerializeField] private Material[] teamMaterials;
@@ -35,7 +38,7 @@ public class Chessboard : MonoBehaviour
     private const string HOVER = "Hover";
     private const string TILE = "Tile";
     private const string HIGLIGHT = "Hightlight";
-    
+
 
     private List<ChessPiece> _deadWhite = new List<ChessPiece>();
     private List<ChessPiece> _deadBlack = new List<ChessPiece>();
@@ -85,9 +88,9 @@ public class Chessboard : MonoBehaviour
         Buttons.Instance.setLocaleGame += OnSetLocaleGame;
         Buttons.Instance.onPauseResumeButtonClick += InPauseButton;
         Buttons.Instance.onRestartButtonClick += OnRestartButtonClick;
-        
+
     }
-    
+
     private void OnRematchServer(NetMessage msg, NetworkConnection networkConnection)
     {
         Server.Instance.Broadcast(msg);
@@ -96,12 +99,17 @@ public class Chessboard : MonoBehaviour
     {
         var rematch = msg as NetRematch;
         _playerRematch[rematch.teamId] = rematch.wantRematch == 1;
-        
-        if (rematch.teamId != _currentTeam)
+
+        if ((rematch.teamId != _currentTeam) && (rematch.wantRematch == 0))
+            Buttons.Instance.textQuit.gameObject.SetActive(true);
+        else if (rematch.teamId != _currentTeam)
             Buttons.Instance.textRemach.gameObject.SetActive(true);
 
         if (_playerRematch[0] && _playerRematch[1])
+        {
+            Buttons.Instance.textRemach.gameObject.SetActive(false);
             OnRestartButtonClick();
+        }
     }
 
     private void OnRestartButtonClick()
@@ -109,7 +117,7 @@ public class Chessboard : MonoBehaviour
         _currentlyDragging = null;
         _availableMoves.Clear();
         Buttons.Instance.textRemach.gameObject.SetActive(false);
-        _playerRematch[0] = _playerRematch[1] = false; 
+        _playerRematch[0] = _playerRematch[1] = false;
         foreach (var item in _deadWhite)
         {
             Destroy(item.gameObject);
@@ -125,8 +133,8 @@ public class Chessboard : MonoBehaviour
         {
             for (int j = 0; j < 8; j++)
             {
-                if (_chessPieces[i,j] != null)
-                    Destroy(_chessPieces[i,j].gameObject);
+                if (_chessPieces[i, j] != null)
+                    Destroy(_chessPieces[i, j].gameObject);
                 _chessPieces[i, j] = null;
             }
         }
@@ -134,20 +142,17 @@ public class Chessboard : MonoBehaviour
         SpawnAllPieces();
         PositionAllPieces();
         _isBlackTurn = false;
-        Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame)|| _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+        Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
         Buttons.Instance.pauseMenu.gameObject.SetActive(false);
     }
 
-    private void RestartGame()
-    {
-       
-    }
+
     private void InPauseButton(bool pause)
     {
         if (pause)
             Buttons.Instance.ChangeCamera(0);
         else
-            Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame)|| _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+            Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
     }
 
     private void OnChosePieceServer(NetMessage msg, NetworkConnection networkConnection)
@@ -200,7 +205,7 @@ public class Chessboard : MonoBehaviour
         Buttons.Instance.MenuAnimator.SetTrigger(InGameMenu);
         Buttons.Instance.pauseButton.gameObject.SetActive(true);
     }
-    
+
     private void OnWelcomeClient(NetMessage msg)
     {
         var netWelcome = msg as NetWelcome;
@@ -234,12 +239,12 @@ public class Chessboard : MonoBehaviour
             rematchwhite.teamId = 0;
             rematchwhite.wantRematch = 1;
             Client.Instance.SendToServer(rematchwhite);
-            
+
             var rematchBlack = new NetRematch();
             rematchBlack.teamId = 1;
             rematchBlack.wantRematch = 1;
             Client.Instance.SendToServer(rematchBlack);
-            
+
         }
         else
         {
@@ -258,7 +263,11 @@ public class Chessboard : MonoBehaviour
         Client.Instance.SendToServer(rematch);
         OnRestartButtonClick();
         Buttons.Instance.OnLeaveFromGameMenu();
+        Buttons.Instance.pauseMenu.gameObject.SetActive(false);
+        Buttons.Instance.pauseButton.gameObject.SetActive(false);
+        
         Invoke("ShutdownRelay", 1.0f);
+
         _playerCount = -1;
         _currentTeam = -1;
     }
@@ -267,12 +276,14 @@ public class Chessboard : MonoBehaviour
     {
         Client.Instance.ShutDown();
         Server.Instance.ShutDown();
+
+        Buttons.Instance.textQuit.gameObject.SetActive(false);
+        Buttons.Instance.textRemach.gameObject.SetActive(false);
     }
     #endregion
 
     private void OnSetLocaleGame(bool value)
     {
-
         _localGame = value;
     }
 
@@ -359,7 +370,7 @@ public class Chessboard : MonoBehaviour
         }
     }
 
-    
+
 
 
     private void GenerateAllTiles(float tileSize, int tileCountX, int tileCountY)
@@ -368,10 +379,10 @@ public class Chessboard : MonoBehaviour
         _bounds = new Vector3((tileCountX * 0.5f) * tileSize, 0, (tileCountX * 0.5f) * tileSize) + boardCenter;
         _tiles = new GameObject[tileCountX, tileCountY];
         for (var x = 0; x < tileCountX; x++)
-        for (var y = 0; y < tileCountY; y++)
-            _tiles[x, y] = GenerateSingleTile(tileSize, x, y);
+            for (var y = 0; y < tileCountY; y++)
+                _tiles[x, y] = GenerateSingleTile(tileSize, x, y);
     }
-    
+
 
     private GameObject GenerateSingleTile(float tileSize, int x, int y)
     {
@@ -388,14 +399,14 @@ public class Chessboard : MonoBehaviour
             new Vector3((x + 1) * tileSize, yOffset, (y + 1) * tileSize) - _bounds
         };
 
-        int[] tris = {0, 1, 2, 1, 3, 2};
+        int[] tris = { 0, 1, 2, 1, 3, 2 };
         mesh.vertices = vertices;
         mesh.triangles = tris;
-        
+
         mesh.RecalculateNormals();
         tileObject.layer = LayerMask.NameToLayer(TILE);
         tileObject.AddComponent<BoxCollider>();
-        
+
         return tileObject;
     }
 
@@ -422,12 +433,12 @@ public class Chessboard : MonoBehaviour
             _chessPieces[i, 1] = SpawnSinglePiece(ChessPiece.Type.Pawn, whiteTeam);
             _chessPieces[i, 6] = SpawnSinglePiece(ChessPiece.Type.Pawn, blackTeam);
         }
-       
+
     }
 
     private ChessPiece SpawnSinglePiece(ChessPiece.Type type, int team)
     {
-        var cp = Instantiate(figurePrefabs[(int) type - 1], transform);
+        var cp = Instantiate(figurePrefabs[(int)type - 1], transform);
         cp.type = type;
         cp.team = team;
         cp.meshRenderer.material = teamMaterials[team];
@@ -438,9 +449,9 @@ public class Chessboard : MonoBehaviour
     private void PositionAllPieces()
     {
         for (var x = 0; x < TILE_COUNT_X; x++)
-        for (var y = 0; y < TILE_COUNT_Y; y++)
-            if (_chessPieces[x, y] != null)
-                SetPiecePos(new Vector2Int(x, y), true);
+            for (var y = 0; y < TILE_COUNT_Y; y++)
+                if (_chessPieces[x, y] != null)
+                    SetPiecePos(new Vector2Int(x, y), true);
     }
 
     private void SetPiecePos(Vector2Int pos, bool force = false)
@@ -475,14 +486,14 @@ public class Chessboard : MonoBehaviour
     private Vector2Int LockupTileIndex(GameObject hitInfo)
     {
         for (var x = 0; x < TILE_COUNT_X; x++)
-        for (var y = 0; y < TILE_COUNT_Y; y++)
-            if (_tiles[x, y] == hitInfo)
-                return new Vector2Int(x, y);
+            for (var y = 0; y < TILE_COUNT_Y; y++)
+                if (_tiles[x, y] == hitInfo)
+                    return new Vector2Int(x, y);
 
         return -Vector2Int.one;
     }
 
-    
+
 
     private void MoveTo(Vector2Int originalCoord, Vector2Int pos)
     {
@@ -494,8 +505,8 @@ public class Chessboard : MonoBehaviour
                 return;
             var isFirstTeam = otherChessPieces.team == 0;
             var chessPiecesDirection = isFirstTeam ? 1 : -1;
-            var startPositionShiftX = new[] {-0.7f, TILE_COUNT_X - 0.3f};
-            var startPositionShiftZ = new[] {0, TILE_COUNT_X - 1};
+            var startPositionShiftX = new[] { -0.7f, TILE_COUNT_X - 0.3f };
+            var startPositionShiftZ = new[] { 0, TILE_COUNT_X - 1 };
             var deadTeam = isFirstTeam ? _deadWhite : _deadBlack;
 
             var boardSize = new Vector3(tileSize * 0.5f, 0, tileSize * 0.5f) - _bounds;
@@ -528,7 +539,7 @@ public class Chessboard : MonoBehaviour
                 _chessPieces[pos.x, pos.y] = piece;
                 SetPiecePos(pos, true);
                 piece.currentPos = pos;
-                var chosePiece = new NetChosePiece {type = type, pos = pos, teamId = _currentTeam};
+                var chosePiece = new NetChosePiece { type = type, pos = pos, teamId = _currentTeam };
                 Client.Instance.SendToServer(chosePiece);
                 ChangeTurn();
             });
@@ -561,7 +572,7 @@ public class Chessboard : MonoBehaviour
             OnCheck?.Invoke(turn);
         }
     }
-    
+
 
     public static bool IsKingUnderAttack(ChessPiece[,] board, int team)
     {

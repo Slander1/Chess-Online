@@ -144,6 +144,8 @@ public class Chessboard : MonoBehaviour
         _isBlackTurn = false;
         Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
         Buttons.Instance.pauseMenu.gameObject.SetActive(false);
+        if (_localGame)
+            _currentTeam = 0;
     }
 
 
@@ -263,6 +265,7 @@ public class Chessboard : MonoBehaviour
         Client.Instance.SendToServer(rematch);
         OnRestartButtonClick();
         Buttons.Instance.OnLeaveFromGameMenu();
+        Buttons.Instance.backGroundIMG.gameObject.SetActive(false);
         Buttons.Instance.pauseMenu.gameObject.SetActive(false);
         Buttons.Instance.pauseButton.gameObject.SetActive(false);
         

@@ -258,16 +258,21 @@ public class Chessboard : MonoBehaviour
         Client.Instance.SendToServer(rematch);
         OnRestartButtonClick();
         Buttons.Instance.OnLeaveFromGameMenu();
-        Client.Instance.ShutDown();
-        Server.Instance.ShutDown();
+        Invoke("ShutdownRelay", 1.0f);
         _playerCount = -1;
         _currentTeam = -1;
     }
 
+    private void ShutdownRelay()
+    {
+        Client.Instance.ShutDown();
+        Server.Instance.ShutDown();
+    }
     #endregion
 
     private void OnSetLocaleGame(bool value)
     {
+
         _localGame = value;
     }
 

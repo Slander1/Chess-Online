@@ -19,7 +19,7 @@ public class Buttons : MonoBehaviour
     public Image backGroundIMG;
     public Animator MenuAnimator;
     public TMP_Text textRemach;
-    
+    public TMP_Text textQuit;
     [SerializeField] private TextMeshProUGUI victorytext;
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;
@@ -138,6 +138,8 @@ public class Buttons : MonoBehaviour
     {
         pauseMenu.gameObject.SetActive(true);
         resumeButton.gameObject.SetActive(false);
+        exitButton.gameObject.SetActive(true);
+        restartButton.gameObject.SetActive(true);
         victorytext.text = (team == 0) ? "White wins" : "Black wins";
     }
     

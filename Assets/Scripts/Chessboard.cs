@@ -8,7 +8,6 @@ using Net.NetMassage;
 using Unity.Networking.Transport;
 using UnityEngine;
 using static Net.NetUtility;
-using static GameLogic.Tiles;
 
 public class Chessboard : MonoBehaviour
 {
@@ -32,7 +31,6 @@ public class Chessboard : MonoBehaviour
     private bool _isBlackTurn;
     private int _playerCount = -1;
     private int _currentTeam = -1;
-    private Vector2Int _swapPawn = new Vector2Int(-1, -1);
     public static event Action<int> OnCheck;
     public static event Action<int> OnMate;
     private bool _localGame = false;
@@ -273,14 +271,14 @@ public class Chessboard : MonoBehaviour
     private void Update()
     {
         var ray = _currentCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out var info, 100, LayerMask.GetMask(TILE, HOVER, HIGLIGHT)))
+        if (Physics.Raycast(ray, out var info, 100, LayerMask.GetMask(Tiles.TILE, Tiles.HOVER, Tiles.HIGLIGHT)))
         {
             Vector2Int hitPosition = Tiles.Instance.LockupTileIndex(info.transform.gameObject);
 
             if (_currentHover == -Vector2Int.one)
             {
                 _currentHover = hitPosition;
-                Tiles.Instance.tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(HOVER);
+                Tiles.Instance.tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(Tiles.HOVER);
             }
 
 
@@ -288,10 +286,10 @@ public class Chessboard : MonoBehaviour
             {
                 Tiles.Instance.tiles[_currentHover.x, _currentHover.y].layer =
                     (_availableMoves.Contains(_currentHover))
-                        ? LayerMask.NameToLayer(HIGLIGHT)
-                        : LayerMask.NameToLayer(TILE);
+                        ? LayerMask.NameToLayer(Tiles.HIGLIGHT)
+                        : LayerMask.NameToLayer(Tiles.TILE);
                 _currentHover = hitPosition;
-                Tiles.Instance.tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(HOVER);
+                Tiles.Instance.tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(Tiles.HOVER);
             }
 
             if (Input.GetMouseButtonDown(0) && _chessPieces[hitPosition.x, hitPosition.y] != null &&
@@ -331,8 +329,8 @@ public class Chessboard : MonoBehaviour
             {
                 Tiles.Instance.tiles[_currentHover.x, _currentHover.y].layer =
                     (_availableMoves.Contains(_currentHover))
-                        ? LayerMask.NameToLayer(HIGLIGHT)
-                        : LayerMask.NameToLayer(TILE);
+                        ? LayerMask.NameToLayer(Tiles.HIGLIGHT)
+                        : LayerMask.NameToLayer(Tiles.TILE);
                 _currentHover = -Vector2Int.one;
             }
 
@@ -404,7 +402,6 @@ public class Chessboard : MonoBehaviour
                 ChangeTurn();
             });
             Destroy(pawn.gameObject);
-            _swapPawn = pawn.currentPos;
             return;
         }
         ChangeTurn();

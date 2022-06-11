@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using GameLogic;
 using UnityEngine;
 
 namespace ChessPiaces
@@ -41,8 +41,8 @@ namespace ChessPiaces
             return allSteps.Where(step =>
                 {
                     var nextStep = currentPos + step;
-                    return !(nextStep.x >= Chessboard.TILE_COUNT_X ||
-                             nextStep.y >= Chessboard.TILE_COUNT_Y ||
+                    return !(nextStep.x >= Tiles.Instance.TILE_COUNT_X ||
+                             nextStep.y >= Tiles.Instance.TILE_COUNT_Y ||
                              nextStep.x < 0 || nextStep.y < 0 ||
                              (board[nextStep.x, nextStep.y] != null && board[nextStep.x, nextStep.y].team == team));
                 })
@@ -88,7 +88,7 @@ namespace ChessPiaces
         }
         protected static bool CheckBoard(int x, int y)
         {
-            return (x < 0 || y < 0 || x >= Chessboard.TILE_COUNT_X || y >= Chessboard.TILE_COUNT_Y);
+            return (x < 0 || y < 0 || x >= Tiles.Instance.TILE_COUNT_X || y >= Tiles.Instance.TILE_COUNT_Y);
         }
     
     }

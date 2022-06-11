@@ -17,22 +17,23 @@ public class Buttons : MonoBehaviour
     public Button pauseButton;
     public Image pauseMenu;
     public Image backGroundIMG;
-    public Animator MenuAnimator;
-    public TMP_Text textRemach;
+    public Animator menuAnimator;
+    public TMP_Text textRematch;
     public TMP_Text textQuit;
-    [SerializeField] private TextMeshProUGUI victorytext;
-    [SerializeField] private Button resumeButton;
-    [SerializeField] private Button restartButton;
-    [SerializeField] private Button exitButton;
-    [SerializeField] private TMP_InputField addressInput;
-    [SerializeField] private GameObject[] cameraAngles;
-
     
     public Action<bool> setLocaleGame;
     public Action<bool> onPauseResumeButtonClick;
     public Action onRestartButtonClick;
+    public Action onMenuButton;
+    
+    [SerializeField] private TextMeshProUGUI victoryText;
+    [SerializeField] private Button resumeButton;
+    [SerializeField] private Button restartButton;
+    [SerializeField] private Button exitButton;
+    [SerializeField] private TMP_InputField addressInput;
+    [SerializeField] private GameObject[] camerasAngles;
 
-    private string[] triggers =
+    private readonly string[] _triggers =
     {
         "StartMenu",
         "HostMenu",
@@ -52,12 +53,10 @@ public class Buttons : MonoBehaviour
 
     public void ChangeCamera(CameraAngle index)
     {
-        for (var i = 0; i < cameraAngles.Length; i++)
-        {
-            cameraAngles[i].SetActive(false);
-        }
-        
-        cameraAngles[(int)index].SetActive(true);
+        foreach (var camera in camerasAngles)
+            camera.SetActive(false);
+
+        camerasAngles[(int)index].SetActive(true);
     }
     
     public void OnEnable()
@@ -74,14 +73,14 @@ public class Buttons : MonoBehaviour
     public void OnLocaleGameButtonClick()
     {
         setLocaleGame?.Invoke(true);
-        MenuAnimator.SetTrigger(triggers[3]);
+        menuAnimator.SetTrigger(_triggers[3]);
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
     }
 
     public void OnOnlineGameButtonClick()
     {
-        MenuAnimator.SetTrigger(triggers[2]);
+        menuAnimator.SetTrigger(_triggers[2]);
     }
     
     public void OnOnlineHostButtonClick()
@@ -89,7 +88,7 @@ public class Buttons : MonoBehaviour
         setLocaleGame?.Invoke(false);
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
-        MenuAnimator.SetTrigger(triggers[1]);
+        menuAnimator.SetTrigger(_triggers[1]);
     }
 
     public void OnOnlineConnectButtonClick()
@@ -102,12 +101,14 @@ public class Buttons : MonoBehaviour
     {
         server.ShutDown();
         client.ShutDown();
-        MenuAnimator.SetTrigger(triggers[0]);
+        menuAnimator.SetTrigger(_triggers[0]);
+        
     }
     
     public void OnOnlineHostBackHostButtonClick()
     {
-        MenuAnimator.SetTrigger(triggers[2]);
+        menuAnimator.SetTrigger(_triggers[2]);
+        onMenuButton?.Invoke();
     }
     public void OnPauseButtonClick()
     {
@@ -134,13 +135,13 @@ public class Buttons : MonoBehaviour
         onRestartButtonClick?.Invoke();
     }
 
-    public void Victory(int team)
+    private void Victory(int team)
     {
         pauseMenu.gameObject.SetActive(true);
         resumeButton.gameObject.SetActive(false);
         exitButton.gameObject.SetActive(true);
         restartButton.gameObject.SetActive(true);
-        victorytext.text = (team == 0) ? "White wins" : "Black wins";
+        victoryText.text = (team == 0) ? "White wins" : "Black wins";
     }
     
     public void Shah(int team)
@@ -149,7 +150,7 @@ public class Buttons : MonoBehaviour
         resumeButton.gameObject.SetActive(true);
         exitButton.gameObject.SetActive(false);
         restartButton.gameObject.SetActive(false);
-        victorytext.text = "Check";
+        victoryText.text = "Check";
     }
 
 
@@ -157,9 +158,9 @@ public class Buttons : MonoBehaviour
     {
         pauseMenu.gameObject.SetActive(false);
         textQuit.gameObject.SetActive(false);
-        textRemach.gameObject.SetActive(false);
+        textRematch.gameObject.SetActive(false);
         ChangeCamera(0);
-        MenuAnimator.SetTrigger(triggers[0]);
+        menuAnimator.SetTrigger(_triggers[0]);
         
     }
 }

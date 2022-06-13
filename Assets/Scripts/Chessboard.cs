@@ -62,14 +62,14 @@ public class Chessboard : MonoBehaviour
         SChosePieceOnChange += OnChosePieceServer;
         SRematch += OnRematchServer;
         CRematch += OnRematchClient;
-        Buttons.Instance.setLocaleGame += OnSetLocaleGame;
-        Buttons.Instance.onPauseResumeButtonClick += InPauseButton;
-        Buttons.Instance.onRestartButtonClick += OnRestartButtonClick;
-        Buttons.Instance.onMenuButton += OnMenuButton;
+        UI.Instance.setLocaleGame += OnSetLocaleGame;
+        UI.Instance.onPauseResumeButtonClick += InPauseButton;
+        UI.Instance.onRestartButtonClick += OnRestartButtonClick;
+        UI.Instance.onMenuButton += OnMenuButton;
 
     }
 
-    private void OnRematchServer(NetMessage msg, NetworkConnection networkConnection)
+    private void OnRematchServer(NetMessage msg)
     {
         Server.Instance.Broadcast(msg);
     }
@@ -79,13 +79,13 @@ public class Chessboard : MonoBehaviour
         _playerRematch[rematch.teamId] = rematch.wantRematch == 1;
 
         if ((rematch.teamId != _currentTeam) && (rematch.wantRematch == 0))
-            Buttons.Instance.textQuit.gameObject.SetActive(true);
+            UI.Instance.textQuit.gameObject.SetActive(true);
         else if (rematch.teamId != _currentTeam)
-            Buttons.Instance.textRematch.gameObject.SetActive(true);
+            UI.Instance.textRematch.gameObject.SetActive(true);
 
         if (_playerRematch[0] && _playerRematch[1])
         {
-            Buttons.Instance.textRematch.gameObject.SetActive(false);
+            UI.Instance.textRematch.gameObject.SetActive(false);
             OnRestartButtonClick();
         }
     }
@@ -94,7 +94,7 @@ public class Chessboard : MonoBehaviour
     {
         _currentlyDragging = null;
         _availableMoves.Clear();
-        Buttons.Instance.textRematch.gameObject.SetActive(false);
+        UI.Instance.textRematch.gameObject.SetActive(false);
         _playerRematch[0] = _playerRematch[1] = false;
         foreach (var item in _deadWhite)
         {
@@ -120,8 +120,8 @@ public class Chessboard : MonoBehaviour
         SpawnAndPosPiaces.Instance.SpawnAllPieces(_chessPieces);
         SpawnAndPosPiaces.Instance.PositionAllPieces(_chessPieces);
         _isBlackTurn = false;
-        Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
-        Buttons.Instance.pauseMenu.gameObject.SetActive(false);
+        UI.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+        UI.Instance.pauseMenu.gameObject.SetActive(false);
         if (_localGame)
             _currentTeam = 0;
     }
@@ -130,12 +130,12 @@ public class Chessboard : MonoBehaviour
     private void InPauseButton(bool pause)
     {
         if (pause)
-            Buttons.Instance.ChangeCamera(0);
+            UI.Instance.ChangeCamera(0);
         else
-            Buttons.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+            UI.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
     }
 
-    private void OnChosePieceServer(NetMessage msg, NetworkConnection networkConnection)
+    private void OnChosePieceServer(NetMessage msg)
     {
         var netChosePiece = msg as NetChosePiece;
         Server.Instance.Broadcast(netChosePiece);
@@ -162,9 +162,9 @@ public class Chessboard : MonoBehaviour
         SChosePieceOnChange += OnChosePieceServer;
         SRematch -= OnRematchServer;
         CRematch -= OnRematchClient;
-        Buttons.Instance.setLocaleGame -= OnSetLocaleGame;
-        Buttons.Instance.onPauseResumeButtonClick -= InPauseButton;
-        Buttons.Instance.onMenuButton -= OnMenuButton;
+        UI.Instance.setLocaleGame -= OnSetLocaleGame;
+        UI.Instance.onPauseResumeButtonClick -= InPauseButton;
+        UI.Instance.onMenuButton -= OnMenuButton;
     }
 
     private void OnMakeMoveClient(NetMessage msg)
@@ -179,12 +179,13 @@ public class Chessboard : MonoBehaviour
     }
 
 
-    private void OnStartGameClient(NetMessage msg)
+    private void OnStartGameClient(NetMessage msg, int connectionNumber)
     {
-        Buttons.Instance.backGroundIMG.gameObject.SetActive(false);
-        Buttons.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
-        Buttons.Instance.menuAnimator.SetTrigger(InGameMenu);
-        Buttons.Instance.pauseButton.gameObject.SetActive(true);
+        UI.Instance.backGroundIMG.gameObject.SetActive(false);
+        UI.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+        
+        UI.Instance.menuAnimator.SetTrigger(InGameMenu);
+        UI.Instance.pauseButton.gameObject.SetActive(true);
     }
 
     private void OnWelcomeClient(NetMessage msg)
@@ -198,19 +199,23 @@ public class Chessboard : MonoBehaviour
     }
 
 
-    private void OnMakeMoveServer(NetMessage msg, NetworkConnection networkConnection)
+    private static void OnMakeMoveServer(NetMessage msg)
     {
         var makeMove = msg as NetMakeMove;
         Server.Instance.Broadcast(makeMove);
     }
 
-    private void OnWelcomeServer(NetMessage msg, NetworkConnection networkConnection)
+    private void OnWelcomeServer(NetMessage msg)
     {
-        var netWelcome = msg as NetWelcome;
-        netWelcome.AssignedTeam = ++_playerCount;
-        Server.Instance.SendToClient(networkConnection, netWelcome);
-        if (_playerCount == 1)
+        if (_localGame)
+            _currentTeam = 0;
+        if (++_playerCount == 1 || _localGame)
             Server.Instance.Broadcast(new NetStartGame());
+        //var netWelcome = msg as NetWelcome;
+        //netWelcome.AssignedTeam = ++_playerCount;
+        //Server.Instance.SendToClient(networkConnection, netWelcome);
+        //if (_playerCount == 1)
+        //    Server.Instance.Broadcast(new NetStartGame());
     }
     public void OnRematchButton()
     {
@@ -243,10 +248,10 @@ public class Chessboard : MonoBehaviour
         rematch.wantRematch = 0;
         Client.Instance.SendToServer(rematch);
         OnRestartButtonClick();
-        Buttons.Instance.OnLeaveFromGameMenu();
-        Buttons.Instance.backGroundIMG.gameObject.SetActive(false);
-        Buttons.Instance.pauseMenu.gameObject.SetActive(false);
-        Buttons.Instance.pauseButton.gameObject.SetActive(false);
+        UI.Instance.OnLeaveFromGameMenu();
+        UI.Instance.backGroundIMG.gameObject.SetActive(true);
+        UI.Instance.pauseMenu.gameObject.SetActive(false);
+        UI.Instance.pauseButton.gameObject.SetActive(false);
         
         Invoke("ShutdownRelay", 1.0f);
 
@@ -258,13 +263,14 @@ public class Chessboard : MonoBehaviour
     {
         Client.Instance.ShutDown();
         Server.Instance.ShutDown();
-        Buttons.Instance.textQuit.gameObject.SetActive(false);
-        Buttons.Instance.textRematch.gameObject.SetActive(false);
+        UI.Instance.textQuit.gameObject.SetActive(false);
+        UI.Instance.textRematch.gameObject.SetActive(false);
     }
     #endregion
 
-    private void OnSetLocaleGame(bool value)
+    private void OnSetLocaleGame(bool value, bool isServer)
     {
+        _currentTeam = isServer ? 1 : 0;
         _localGame = value;
     }
 
@@ -389,10 +395,10 @@ public class Chessboard : MonoBehaviour
         if (_chessPieces[pos.x, pos.y] is Pawn pawn && ((thisTeam == 0 && pos.y == 7) || (thisTeam == 1 && pos.y == 0)) &&
             Convert.ToBoolean(_currentTeam) == _isBlackTurn)
         {
-            Buttons.Instance.ChangeCamera(CameraAngle.menu);
+            UI.Instance.ChangeCamera(CameraAngle.menu);
             choseSelector.SpawnPiecesForChoose(SpawnAndPosPiaces.Instance.teamMaterials[thisTeam], type =>
             {
-                Buttons.Instance.ChangeCamera((_currentTeam == 0 || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+                UI.Instance.ChangeCamera((_currentTeam == 0 || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
                 var piece = SpawnAndPosPiaces.Instance.SpawnSinglePiece(type, _currentTeam);
                 _chessPieces[pos.x, pos.y] = piece;
                 SpawnAndPosPiaces.Instance.SetPiecePos(_chessPieces, pos, true);

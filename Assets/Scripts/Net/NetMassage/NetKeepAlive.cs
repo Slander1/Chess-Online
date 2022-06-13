@@ -24,14 +24,14 @@ namespace Net.NetMassage
         
         }
 
-        public override void RecivedOnClient()
+        public override void RecivedOnClient(NetworkConnection networkConnection)
         {
             NetUtility.CKeepAlive?.Invoke(this);
         }
 
-        public override void RecivedOnServer(NetworkConnection networkConnection)
+        public override void RecivedOnServer()
         {
-            NetUtility.SKeepAlive?.Invoke(this, networkConnection);
+            NetUtility.SKeepAlive?.Invoke(this);
         }
     }
 }

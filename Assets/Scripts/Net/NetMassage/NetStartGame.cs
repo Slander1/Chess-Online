@@ -26,14 +26,14 @@ namespace Net.NetMassage
             //AssignedTeam = dataStreamReader.ReadInt();
         }
 
-        public override void RecivedOnClient()
+        public override void RecivedOnClient(NetworkConnection networkConnection)
         {
-            NetUtility.CStartgame?.Invoke(this);
+            NetUtility.CStartgame?.Invoke(this, networkConnection.InternalId);
         }
 
-        public override void RecivedOnServer(NetworkConnection networkConnection)
+        public override void RecivedOnServer()
         {
-            NetUtility.SStartgame?.Invoke(this, networkConnection);
+            NetUtility.SStartgame?.Invoke(this);
         }
     }
 }

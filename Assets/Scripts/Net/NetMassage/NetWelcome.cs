@@ -27,14 +27,14 @@ namespace Net.NetMassage
             AssignedTeam = dataStreamReader.ReadInt();
         }
 
-        public override void RecivedOnClient()
+        public override void RecivedOnClient(NetworkConnection networkConnection)
         {
             NetUtility.CWelcome?.Invoke(this);
         }
 
-        public override void RecivedOnServer(NetworkConnection networkConnection)
+        public override void RecivedOnServer()
         {
-            NetUtility.SWelcome?.Invoke(this, networkConnection);
+            NetUtility.SWelcome?.Invoke(this);
         }
     }
 }

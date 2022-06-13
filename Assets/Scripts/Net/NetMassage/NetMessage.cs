@@ -17,12 +17,12 @@ namespace Net.NetMassage
         
         }
 
-        public virtual void RecivedOnClient()
+        public virtual void RecivedOnClient(NetworkConnection networkConnection)
         {
         
         }
 
-        public virtual void RecivedOnServer(NetworkConnection networkConnection)
+        public virtual void RecivedOnServer()
         {
         
         }

@@ -31,14 +31,14 @@ namespace Net.NetMassage
             wantRematch = dataStreamReader.ReadByte();
         }
 
-        public override void RecivedOnClient()
+        public override void RecivedOnClient(NetworkConnection networkConnection)
         {
             NetUtility.CRematch?.Invoke(this);
         }
 
-        public override void RecivedOnServer(NetworkConnection networkConnection)
+        public override void RecivedOnServer()
         {
-            NetUtility.SRematch?.Invoke(this, networkConnection);
+            NetUtility.SRematch?.Invoke(this);
         }
     }
 }

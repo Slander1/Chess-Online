@@ -37,14 +37,14 @@ namespace Net.NetMassage
             teamId = dataStreamReader.ReadInt();
         }
 
-        public override void RecivedOnClient()
+        public override void RecivedOnClient(NetworkConnection networkConnection)
         {
             NetUtility.CChosePieceOnChange?.Invoke(this);
         }
 
-        public override void RecivedOnServer(NetworkConnection networkConnection)
+        public override void RecivedOnServer()
         {
-            NetUtility.SChosePieceOnChange?.Invoke(this, networkConnection);
+            NetUtility.SChosePieceOnChange?.Invoke(this);
         }
 
     }

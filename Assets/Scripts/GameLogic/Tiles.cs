@@ -1,12 +1,11 @@
+using Assets.Scripts.Utils;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace GameLogic
 {
-    public class Tiles : MonoBehaviour
+    public class Tiles : SingletonBehaviour<Tiles>
     {
-        public static Tiles Instance { set; get; }
-
         public float yOffset = 0.2f;
         public Vector3 bounds;
         public GameObject[,] tiles;
@@ -19,12 +18,6 @@ namespace GameLogic
         public const string TILE = "Tile";
         public const string HIGLIGHT = "Hightlight";
         public float tileSize = 10.0f;
-        
-        
-        public void Awake()
-        {
-            Instance = this;
-        }
         
         public void GenerateAllTiles(int tileCountX, int tileCountY, Transform transform)
         {

@@ -1,6 +1,6 @@
 using System;
+using Assets.Scripts.Utils;
 using Net;
-using Net.NetMassage;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +12,7 @@ public enum CameraAngle
     blackTeam = 2
 }
 
-public class Buttons : MonoBehaviour
+public class UI : SingletonBehaviour<UI>
 {
     public Button pauseButton;
     public Image pauseMenu;
@@ -21,7 +21,7 @@ public class Buttons : MonoBehaviour
     public TMP_Text textRematch;
     public TMP_Text textQuit;
     
-    public Action<bool> setLocaleGame;
+    public Action<bool, bool> setLocaleGame;
     public Action<bool> onPauseResumeButtonClick;
     public Action onRestartButtonClick;
     public Action onMenuButton;
@@ -41,15 +41,10 @@ public class Buttons : MonoBehaviour
         "InGameMenu"
     };
 
-    public static Buttons Instance { set; get; }
 
 
     public Server server;
     public Client client;
-    public void Awake()
-    {
-        Instance = this;
-    }
 
     public void ChangeCamera(CameraAngle index)
     {
@@ -72,10 +67,12 @@ public class Buttons : MonoBehaviour
     }
     public void OnLocaleGameButtonClick()
     {
-        setLocaleGame?.Invoke(true);
+        setLocaleGame?.Invoke(true, true);
         menuAnimator.SetTrigger(_triggers[3]);
+        
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
+        
     }
 
     public void OnOnlineGameButtonClick()
@@ -85,7 +82,7 @@ public class Buttons : MonoBehaviour
     
     public void OnOnlineHostButtonClick()
     {
-        setLocaleGame?.Invoke(false);
+        setLocaleGame?.Invoke(false, true);
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
         menuAnimator.SetTrigger(_triggers[1]);
@@ -93,7 +90,7 @@ public class Buttons : MonoBehaviour
 
     public void OnOnlineConnectButtonClick()
     {
-        setLocaleGame?.Invoke(false);
+        setLocaleGame?.Invoke(false, false);
         client.Init(addressInput.text, 8007);
     }
 

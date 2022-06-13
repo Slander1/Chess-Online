@@ -19,16 +19,16 @@ namespace Net
     {
         public static Action<NetMessage> CKeepAlive;
         public static Action<NetMessage> CWelcome;
-        public static Action<NetMessage> CStartgame;
+        public static Action<NetMessage, int> CStartgame;
         public static Action<NetMessage> CMakeMove;
         public static Action<NetMessage> CRematch;
         public static Action<NetMessage> CChosePieceOnChange;
-        public static Action<NetMessage, NetworkConnection> SKeepAlive;
-        public static Action<NetMessage, NetworkConnection> SWelcome;
-        public static Action<NetMessage, NetworkConnection> SStartgame;
-        public static Action<NetMessage, NetworkConnection> SMakeMove;
-        public static Action<NetMessage, NetworkConnection> SRematch;
-        public static Action<NetMessage, NetworkConnection> SChosePieceOnChange;
+        public static Action<NetMessage> SKeepAlive;
+        public static Action<NetMessage> SWelcome;
+        public static Action<NetMessage> SStartgame;
+        public static Action<NetMessage> SMakeMove;
+        public static Action<NetMessage> SRematch;
+        public static Action<NetMessage> SChosePieceOnChange;
 
 
         public static void OnData(DataStreamReader dataStreamReader, NetworkConnection networkConnection,
@@ -60,9 +60,9 @@ namespace Net
             }
 
             if (server != null)
-                msg.RecivedOnServer(networkConnection);
+                msg.RecivedOnServer();
             else
-                msg.RecivedOnClient();
+                msg.RecivedOnClient(networkConnection);
         }
 
 

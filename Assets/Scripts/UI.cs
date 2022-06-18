@@ -1,9 +1,9 @@
 using System;
-using Assets.Scripts.Utils;
 using Net;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Utils.ServiceLocator;
 
 public enum CameraAngle
 {
@@ -12,7 +12,7 @@ public enum CameraAngle
     blackTeam = 2
 }
 
-public class UI : SingletonBehaviour<UI>
+public class UI : ServiceMonoBehaviour
 {
     public Button pauseButton;
     public Image pauseMenu;
@@ -45,7 +45,7 @@ public class UI : SingletonBehaviour<UI>
 
     public Server server;
     public Client client;
-
+    
     public void ChangeCamera(CameraAngle index)
     {
         foreach (var camera in camerasAngles)
@@ -56,14 +56,14 @@ public class UI : SingletonBehaviour<UI>
     
     public void OnEnable()
     {
-        Chessboard.OnCheck += Shah;
-        Chessboard.OnMate += Victory;
+        ServiceL.Get<ChessBoardLogic>().OnCheck += Shah;
+        ServiceL.Get<ChessBoardLogic>().OnMate += Victory;
     }
 
     public void OnDisable()
     {
-        Chessboard.OnCheck -= Shah;
-        Chessboard.OnMate -= Victory;
+        ServiceL.Get<ChessBoardLogic>().OnCheck -= Shah;
+        ServiceL.Get<ChessBoardLogic>().OnMate -= Victory;
     }
     public void OnLocaleGameButtonClick()
     {

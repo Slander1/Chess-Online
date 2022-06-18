@@ -1,4 +1,4 @@
-using ChessPiaces;
+using ChessPieces;
 using Unity.Networking.Transport;
 using UnityEngine;
 

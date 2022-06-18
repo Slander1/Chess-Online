@@ -1,27 +1,48 @@
-using Assets.Scripts.Utils;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
+using Utils.ServiceLocator;
 
 namespace GameLogic
 {
-    public class Tiles : SingletonBehaviour<Tiles>
+    public class Tiles : ServiceMonoBehaviour
     {
-        public float yOffset = 0.2f;
+        public static float YOffset = 0.01f;
         public Vector3 bounds;
         public GameObject[,] tiles;
         [SerializeField]private Material tileMaterial;
-        private Vector3 _boardCenter = Vector3.zero;
-        public readonly int TILE_COUNT_X = 8;
-        public readonly int TILE_COUNT_Y = 8;
+        private readonly Vector3 _boardCenter = Vector3.zero;
+        public static int TILE_COUNT_X = 8;
+        public static int TILE_COUNT_Y = 8;
 
         public const string HOVER = "Hover";
         public const string TILE = "Tile";
         public const string HIGLIGHT = "Hightlight";
         public float tileSize = 10.0f;
-        
+
+        private async void OnEnable()
+        {
+            await Task.Delay(1000);
+            ServiceL.Get<ChessBoardLogic>().lockUpTile += LockupTileIndex;
+            ServiceL.Get<ChessBoardLogic>().swapTileLayer += SwapTileHover;
+            ServiceL.Get<ChessBoardLogic>().highlightTiles += HighlightTiles;
+        }
+
+        private void OnDisable()
+        {
+            ServiceL.Get<ChessBoardLogic>().lockUpTile -= LockupTileIndex;
+            ServiceL.Get<ChessBoardLogic>().swapTileLayer -= SwapTileHover;
+            ServiceL.Get<ChessBoardLogic>().highlightTiles -= HighlightTiles;
+        }
+
+        private void SwapTileHover(Vector2Int pos, string Hover)
+        {
+            tiles[pos.x, pos.y].layer = LayerMask.NameToLayer(Hover);
+        }
+
         public void GenerateAllTiles(int tileCountX, int tileCountY, Transform transform)
         {
-            yOffset += transform.position.y;
+            YOffset += transform.position.y;
             bounds = new Vector3((tileCountX * 0.5f) * tileSize, 0, (tileCountX * 0.5f) * tileSize) + _boardCenter;
             tiles = new GameObject[tileCountX, tileCountY];
             for (var x = 0; x < tileCountX; x++)
@@ -32,20 +53,20 @@ namespace GameLogic
 
         private GameObject GenerateSingleTile(float tileSize, int x, int y, Transform transform)
         {
-            GameObject tileObject = new GameObject(string.Format("X:{0}, Y:{1}", x, y));
+            var tileObject = new GameObject($"X:{x}, Y:{y}");
             tileObject.transform.parent = transform;
             var mesh = new Mesh();
             tileObject.AddComponent<MeshFilter>().mesh = mesh;
             tileObject.AddComponent<MeshRenderer>().material = tileMaterial;
             var vertices = new Vector3[4]
             {
-                new Vector3(x * tileSize, yOffset, y * tileSize) - bounds,
-                new Vector3(x * tileSize, yOffset, (y + 1) * tileSize) - bounds,
-                new Vector3((x + 1) * tileSize, yOffset, (y) * tileSize) - bounds,
-                new Vector3((x + 1) * tileSize, yOffset, (y + 1) * tileSize) - bounds
+                new Vector3(x * tileSize, YOffset, y * tileSize) - bounds,
+                new Vector3(x * tileSize, YOffset, (y + 1) * tileSize) - bounds,
+                new Vector3((x + 1) * tileSize, YOffset, (y) * tileSize) - bounds,
+                new Vector3((x + 1) * tileSize, YOffset, (y + 1) * tileSize) - bounds
             };
 
-            int[] tris = { 0, 1, 2, 1, 3, 2 };
+            var tris = new[] { 0, 1, 2, 1, 3, 2 };
             mesh.vertices = vertices;
             mesh.triangles = tris;
 
@@ -67,12 +88,12 @@ namespace GameLogic
 
         public Vector3 GetTileCenter(Vector2Int pos)
         {
-            return new Vector3(pos.x * tileSize, yOffset + 0.2f, pos.y * tileSize) - bounds +
+            return new Vector3(pos.x * tileSize, YOffset + 0.2f, pos.y * tileSize) - bounds +
                    new Vector3(tileSize / 2, 0, tileSize / 2);
         }
 
 
-        public void HighlightTiles(List<Vector2Int> availableMoves)
+        private void HighlightTiles(List<Vector2Int> availableMoves)
         {
             foreach (var movePos in availableMoves)
             {
@@ -80,7 +101,7 @@ namespace GameLogic
             }
         }
 
-        public Vector2Int LockupTileIndex(GameObject hitInfo)
+        private Vector2Int LockupTileIndex(GameObject hitInfo)
         {
             for (var x = 0; x < TILE_COUNT_X; x++)
             for (var y = 0; y < TILE_COUNT_Y; y++)

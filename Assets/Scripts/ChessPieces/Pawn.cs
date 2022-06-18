@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ChessPiaces
+namespace ChessPieces
 {
     public class Pawn : ChessPiece
     {

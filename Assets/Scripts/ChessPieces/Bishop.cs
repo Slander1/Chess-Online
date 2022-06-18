@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ChessPiaces
+namespace ChessPieces
 {
-    public class Bishoop : Direction
+    public class Bishop : Direction
     {
         protected override List<Vector2Int> _directions => new List<Vector2Int>
         {

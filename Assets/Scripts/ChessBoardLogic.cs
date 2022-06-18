@@ -1,22 +1,33 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ChessPiaces;
+using ChessPieces;
+using ChessPieces.ChessPiecesChose;
 using GameLogic;
 using Net;
 using Net.NetMassage;
-using Unity.Networking.Transport;
+using ServiceLocator;
 using UnityEngine;
-using static Net.NetUtility;
+using Utils.ServiceLocator;
 
-public class Chessboard : MonoBehaviour
+public class ChessBoardLogic : IService
 {
-
-    [SerializeField] private float deadScale = 0.8f;
-    [SerializeField] private float deadSpacing = 10f;
-    [SerializeField] private float dragOffset = 1.5f;
-    [SerializeField] private ChessPiecesChoseSelector choseSelector;
-    
+    public void Init(float deadScale, float deadSpacing, float dragOffset, ChessPiecesChoseSelector choseSelector, Transform transform)
+    {
+        _tileCountX = Tiles.TILE_COUNT_X;
+        _tileCountY = Tiles.TILE_COUNT_Y;
+        _deadScale = deadScale;
+        _deadSpacing = deadSpacing;
+        _dragOffset = dragOffset;
+        this.choseSelector = choseSelector;
+        _transform = transform;
+        _isBlackTurn = false;
+       
+        ServiceL.Get<Tiles>().GenerateAllTiles(_tileCountX, _tileCountY, transform);
+        _chessPieces = new ChessPiece[_tileCountX, _tileCountY];
+        SpawnAndPosPiaces.Instance.SpawnAllPieces(_chessPieces);
+        SpawnAndPosPiaces.Instance.PositionAllPieces(_chessPieces);
+    }
 
     private List<ChessPiece> _deadWhite = new List<ChessPiece>();
     private List<ChessPiece> _deadBlack = new List<ChessPiece>();
@@ -25,84 +36,69 @@ public class Chessboard : MonoBehaviour
     private ChessPiece[,] _chessPieces;
     private ChessPiece _currentlyDragging;
     
-    private Camera _currentCamera;
-    private Vector2Int _currentHover;
     
     private bool _isBlackTurn;
     private int _playerCount = -1;
     private int _currentTeam = -1;
-    public static event Action<int> OnCheck;
-    public static event Action<int> OnMate;
+        
     private bool _localGame = false;
     private bool[] _playerRematch = new bool[2];
     private static readonly int InGameMenu = Animator.StringToHash("InGameMenu");
+    private float _deadScale;
+    private float _deadSpacing;
+    private float _dragOffset;
+    private ChessPiecesChoseSelector choseSelector;
+    public event Action<int> OnCheck;
+    public event Action<int> OnMate;
+    private Transform _transform;
+    private Vector2Int _currentHover;
+    private int _tileCountX;
+    private int _tileCountY;
+    
+    
+    public event Action<Vector2Int, string> swapTileLayer;
+    public Func<GameObject, Vector2Int> lockUpTile;
+    public event Action<List<Vector2Int>> highlightTiles; 
+    public Func <Vector2Int, Vector3> getTileCenter;
+    public event Action<List<Vector2Int>> removeHighlightTiles;
+   
+    
 
-    private void Start()
-    {
-        _isBlackTurn = false;
-        _currentCamera = Camera.main;
-        Tiles.Instance.GenerateAllTiles(Tiles.Instance.TILE_COUNT_X, Tiles.Instance.TILE_COUNT_Y, transform);
-        _chessPieces = new ChessPiece[Tiles.Instance.TILE_COUNT_X, Tiles.Instance.TILE_COUNT_Y];
-        SpawnAndPosPiaces.Instance.SpawnAllPieces(_chessPieces);
-        SpawnAndPosPiaces.Instance.PositionAllPieces(_chessPieces);
-
-        RegisterEvents();
-    }
-
-    #region Reg
-
-    private void RegisterEvents()
-    {
-        SWelcome += OnWelcomeServer;
-        CWelcome += OnWelcomeClient;
-        CStartgame += OnStartGameClient;
-        SMakeMove += OnMakeMoveServer;
-        CMakeMove += OnMakeMoveClient;
-        CChosePieceOnChange += OnChosePieceClient;
-        SChosePieceOnChange += OnChosePieceServer;
-        SRematch += OnRematchServer;
-        CRematch += OnRematchClient;
-        UI.Instance.setLocaleGame += OnSetLocaleGame;
-        UI.Instance.onPauseResumeButtonClick += InPauseButton;
-        UI.Instance.onRestartButtonClick += OnRestartButtonClick;
-        UI.Instance.onMenuButton += OnMenuButton;
-
-    }
-
-    private void OnRematchServer(NetMessage msg)
+    public void OnRematchServer(NetMessage msg)
     {
         Server.Instance.Broadcast(msg);
     }
-    private void OnRematchClient(NetMessage msg)
+
+    public void OnRematchClient(NetMessage msg)
     {
         var rematch = msg as NetRematch;
         _playerRematch[rematch.teamId] = rematch.wantRematch == 1;
 
         if ((rematch.teamId != _currentTeam) && (rematch.wantRematch == 0))
-            UI.Instance.textQuit.gameObject.SetActive(true);
+            ServiceL.Get<UI>().textQuit.gameObject.SetActive(true);
         else if (rematch.teamId != _currentTeam)
-            UI.Instance.textRematch.gameObject.SetActive(true);
+            ServiceL.Get<UI>().textRematch.gameObject.SetActive(true);
 
         if (_playerRematch[0] && _playerRematch[1])
         {
-            UI.Instance.textRematch.gameObject.SetActive(false);
+            ServiceL.Get<UI>().textRematch.gameObject.SetActive(false);
             OnRestartButtonClick();
         }
     }
 
-    private void OnRestartButtonClick()
+    public void OnRestartButtonClick()
     {
         _currentlyDragging = null;
         _availableMoves.Clear();
-        UI.Instance.textRematch.gameObject.SetActive(false);
+        ServiceL.Get<UI>().textRematch.gameObject.SetActive(false);
         _playerRematch[0] = _playerRematch[1] = false;
         foreach (var item in _deadWhite)
         {
-            Destroy(item.gameObject);
+            ChessBoard.DestoyPiece(item.gameObject);
         }
         foreach (var item in _deadBlack)
         {
-            Destroy(item.gameObject);
+            ChessBoard.DestoyPiece(item.gameObject);
         }
         _deadBlack.Clear();
         _deadWhite.Clear();
@@ -112,7 +108,7 @@ public class Chessboard : MonoBehaviour
             for (int j = 0; j < 8; j++)
             {
                 if (_chessPieces[i, j] != null)
-                    Destroy(_chessPieces[i, j].gameObject);
+                    ChessBoard.DestoyPiece(_chessPieces[i, j].gameObject);
                 _chessPieces[i, j] = null;
             }
         }
@@ -120,54 +116,40 @@ public class Chessboard : MonoBehaviour
         SpawnAndPosPiaces.Instance.SpawnAllPieces(_chessPieces);
         SpawnAndPosPiaces.Instance.PositionAllPieces(_chessPieces);
         _isBlackTurn = false;
-        UI.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
-        UI.Instance.pauseMenu.gameObject.SetActive(false);
+        ServiceL.Get<UI>().ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+        ServiceL.Get<UI>().pauseMenu.gameObject.SetActive(false);
         if (_localGame)
             _currentTeam = 0;
     }
 
 
-    private void InPauseButton(bool pause)
+    public void InPauseButton(bool pause)
     {
         if (pause)
-            UI.Instance.ChangeCamera(0);
+            ServiceL.Get<UI>().ChangeCamera(0);
         else
-            UI.Instance.ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+            ServiceL.Get<UI>().ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
     }
 
-    private void OnChosePieceServer(NetMessage msg)
+    public void OnChosePieceServer(NetMessage msg)
     {
         var netChosePiece = msg as NetChosePiece;
         Server.Instance.Broadcast(netChosePiece);
     }
 
-    private void OnChosePieceClient(NetMessage msg)
+    public void OnChosePieceClient(NetMessage msg)
     {
         var netChosePiece = msg as NetChosePiece;
-        Destroy(_chessPieces[netChosePiece.pos.x, netChosePiece.pos.y].gameObject);
+        ChessBoard.DestoyPiece(_chessPieces[netChosePiece.pos.x, netChosePiece.pos.y].gameObject);
         var piece = SpawnAndPosPiaces.Instance.SpawnSinglePiece(netChosePiece.type, netChosePiece.teamId);
         _chessPieces[netChosePiece.pos.x, netChosePiece.pos.y] = piece;
         SpawnAndPosPiaces.Instance.SetPiecePos(_chessPieces,netChosePiece.pos, true);
         piece.currentPos = netChosePiece.pos;
     }
 
-    private void UnRegisterEvents()
-    {
-        SWelcome -= OnWelcomeServer;
-        CWelcome -= OnWelcomeClient;
-        CStartgame -= OnStartGameClient;
-        SMakeMove -= OnMakeMoveServer;
-        CMakeMove -= OnMakeMoveClient;
-        CChosePieceOnChange += OnChosePieceClient;
-        SChosePieceOnChange += OnChosePieceServer;
-        SRematch -= OnRematchServer;
-        CRematch -= OnRematchClient;
-        UI.Instance.setLocaleGame -= OnSetLocaleGame;
-        UI.Instance.onPauseResumeButtonClick -= InPauseButton;
-        UI.Instance.onMenuButton -= OnMenuButton;
-    }
+    
 
-    private void OnMakeMoveClient(NetMessage msg)
+    public void OnMakeMoveClient(NetMessage msg)
     {
         var makeMove = msg as NetMakeMove;
         if (makeMove.teamId != _currentTeam)
@@ -179,16 +161,16 @@ public class Chessboard : MonoBehaviour
     }
 
 
-    private void OnStartGameClient(NetMessage msg, int connectionNumber)
+    public void OnStartGameClient(NetMessage msg, int connectionNumber)
     {
-        UI.Instance.backGroundIMG.gameObject.SetActive(false);
-        UI.Instance.ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+        ServiceL.Get<UI>().backGroundIMG.gameObject.SetActive(false);
+        ServiceL.Get<UI>().ChangeCamera((_currentTeam == 0) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
         
-        UI.Instance.menuAnimator.SetTrigger(InGameMenu);
-        UI.Instance.pauseButton.gameObject.SetActive(true);
+        ServiceL.Get<UI>().menuAnimator.SetTrigger(InGameMenu);
+        ServiceL.Get<UI>().pauseButton.gameObject.SetActive(true);
     }
 
-    private void OnWelcomeClient(NetMessage msg)
+    public void OnWelcomeClient(NetMessage msg)
     {
         var netWelcome = msg as NetWelcome;
         _currentTeam = netWelcome.AssignedTeam;
@@ -199,13 +181,13 @@ public class Chessboard : MonoBehaviour
     }
 
 
-    private static void OnMakeMoveServer(NetMessage msg)
+    public void OnMakeMoveServer(NetMessage msg)
     {
         var makeMove = msg as NetMakeMove;
         Server.Instance.Broadcast(makeMove);
     }
 
-    private void OnWelcomeServer(NetMessage msg)
+    public void OnWelcomeServer(NetMessage msg)
     {
         if (_localGame)
             _currentTeam = 0;
@@ -248,12 +230,12 @@ public class Chessboard : MonoBehaviour
         rematch.wantRematch = 0;
         Client.Instance.SendToServer(rematch);
         OnRestartButtonClick();
-        UI.Instance.OnLeaveFromGameMenu();
-        UI.Instance.backGroundIMG.gameObject.SetActive(true);
-        UI.Instance.pauseMenu.gameObject.SetActive(false);
-        UI.Instance.pauseButton.gameObject.SetActive(false);
+        ServiceL.Get<UI>().OnLeaveFromGameMenu();
+        ServiceL.Get<UI>().backGroundIMG.gameObject.SetActive(true);
+        ServiceL.Get<UI>().pauseMenu.gameObject.SetActive(false);
+        ServiceL.Get<UI>().pauseButton.gameObject.SetActive(false);
         
-        Invoke("ShutdownRelay", 1.0f);
+        //Invoke("ShutdownRelay", 1.0f);
 
         _playerCount = -1;
         _currentTeam = -1;
@@ -263,39 +245,32 @@ public class Chessboard : MonoBehaviour
     {
         Client.Instance.ShutDown();
         Server.Instance.ShutDown();
-        UI.Instance.textQuit.gameObject.SetActive(false);
-        UI.Instance.textRematch.gameObject.SetActive(false);
+        ServiceL.Get<UI>().textQuit.gameObject.SetActive(false);
+        ServiceL.Get<UI>().textRematch.gameObject.SetActive(false);
     }
-    #endregion
 
-    private void OnSetLocaleGame(bool value, bool isServer)
+    public void OnSetLocaleGame(bool value, bool isServer)
     {
         _currentTeam = isServer ? 1 : 0;
         _localGame = value;
     }
 
-    private void Update()
+    public void OnRaycastLayer(Ray ray, RaycastHit info)
     {
-        var ray = _currentCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out var info, 100, LayerMask.GetMask(Tiles.TILE, Tiles.HOVER, Tiles.HIGLIGHT)))
-        {
-            Vector2Int hitPosition = Tiles.Instance.LockupTileIndex(info.transform.gameObject);
+        Vector2Int hitPosition = (Vector2Int) lockUpTile?.Invoke(info.transform.gameObject);
 
             if (_currentHover == -Vector2Int.one)
             {
                 _currentHover = hitPosition;
-                Tiles.Instance.tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(Tiles.HOVER);
+                swapTileLayer?.Invoke(hitPosition, Tiles.HOVER);
             }
-
 
             if (_currentHover != hitPosition)
             {
-                Tiles.Instance.tiles[_currentHover.x, _currentHover.y].layer =
-                    (_availableMoves.Contains(_currentHover))
-                        ? LayerMask.NameToLayer(Tiles.HIGLIGHT)
-                        : LayerMask.NameToLayer(Tiles.TILE);
+                swapTileLayer?.Invoke(_currentHover,
+                    _availableMoves.Contains(_currentHover) ? Tiles.HIGLIGHT : Tiles.TILE);
                 _currentHover = hitPosition;
-                Tiles.Instance.tiles[hitPosition.x, hitPosition.y].layer = LayerMask.NameToLayer(Tiles.HOVER);
+                swapTileLayer?.Invoke(hitPosition, Tiles.HOVER);
             }
 
             if (Input.GetMouseButtonDown(0) && _chessPieces[hitPosition.x, hitPosition.y] != null &&
@@ -304,7 +279,7 @@ public class Chessboard : MonoBehaviour
             {
                 _currentlyDragging = _chessPieces[hitPosition.x, hitPosition.y];
                 _availableMoves = _currentlyDragging.GetAvailableMoves(_chessPieces);
-                Tiles.Instance.HighlightTiles(_availableMoves);
+                highlightTiles?.Invoke(_availableMoves);
             }
 
             if (_currentlyDragging != null && Input.GetMouseButtonUp(0))
@@ -323,42 +298,44 @@ public class Chessboard : MonoBehaviour
                 }
                 else
                 {
-                    _currentlyDragging.AnimateMove(Tiles.Instance.GetTileCenter(lastPosition));
+                    _currentlyDragging.AnimateMove((Vector3) getTileCenter?.Invoke(lastPosition));
                     _currentlyDragging = null;
-                    Tiles.Instance.RemoveHighlightTiles(_availableMoves);
+                    removeHighlightTiles?.Invoke(_availableMoves);
+                    //Tiles.Instance.RemoveHighlightTiles(_availableMoves);
                 }
             }
-        }
-        else
-        {
-            if (_currentHover != -Vector2Int.one)
-            {
-                Tiles.Instance.tiles[_currentHover.x, _currentHover.y].layer =
-                    (_availableMoves.Contains(_currentHover))
-                        ? LayerMask.NameToLayer(Tiles.HIGLIGHT)
-                        : LayerMask.NameToLayer(Tiles.TILE);
-                _currentHover = -Vector2Int.one;
-            }
 
-            if (_currentlyDragging && Input.GetMouseButtonUp(0))
-            {
-                _currentlyDragging.AnimateMove(Tiles.Instance.GetTileCenter(_currentlyDragging.currentPos));
-                _currentlyDragging = null;
-                Tiles.Instance.RemoveHighlightTiles(_availableMoves);
-            }
-        }
+            HorizontalPlane(ray);
 
+    }
 
+    private void HorizontalPlane(Ray ray)
+    {
         if (!_currentlyDragging) return;
-        var horizontalPlane = new Plane(Vector3.up, Vector3.up * Tiles.Instance.yOffset);
+        var horizontalPlane = new Plane(Vector3.up, Vector3.up * Tiles.YOffset);
         if (horizontalPlane.Raycast(ray, out var distance))
         {
-            _currentlyDragging.AnimateMove(ray.GetPoint(distance) + Vector3.up * dragOffset);
+            _currentlyDragging.AnimateMove(ray.GetPoint(distance) + Vector3.up * _dragOffset);
         }
     }
-    
+    public void onRaycastWithoutLayer(Ray ray, RaycastHit info)
+    {
+        if (_currentHover != -Vector2Int.one)
+        {
+            swapTileLayer?.Invoke(_currentHover,
+                _availableMoves.Contains(_currentHover) ? Tiles.HIGLIGHT : Tiles.TILE);
+            _currentHover = -Vector2Int.one;
+        }
 
-    
+        if (_currentlyDragging && Input.GetMouseButtonUp(0))
+        {
+            _currentlyDragging.AnimateMove((Vector3) getTileCenter?.Invoke(_currentlyDragging.currentPos));
+            _currentlyDragging = null;
+            removeHighlightTiles?.Invoke(_availableMoves);
+        }
+        HorizontalPlane(ray);
+    }
+
     private void MoveTo(Vector2Int originalCoord, Vector2Int pos)
     {
         ChessPiece currentlyDragging = _chessPieces[originalCoord.x, originalCoord.y];
@@ -369,18 +346,18 @@ public class Chessboard : MonoBehaviour
                 return;
             var isFirstTeam = otherChessPieces.team == 0;
             var chessPiecesDirection = isFirstTeam ? 1 : -1;
-            var startPositionShiftX = new[] { -0.7f, Tiles.Instance.TILE_COUNT_X - 0.3f };
-            var startPositionShiftZ = new[] { 0, Tiles.Instance.TILE_COUNT_X - 1 };
+            var startPositionShiftX = new[] { -0.7f, _tileCountX - 0.3f };
+            var startPositionShiftZ = new[] { 0, _tileCountX - 1 };
             var deadTeam = isFirstTeam ? _deadWhite : _deadBlack;
 
-            var boardSize = new Vector3(Tiles.Instance.tileSize * 0.5f, 0, Tiles.Instance.tileSize * 0.5f) - Tiles.Instance.bounds;
-            var shift = Vector3.forward * (chessPiecesDirection * deadSpacing * deadTeam.Count);
-            otherChessPieces.SetScale(Vector3.one * deadScale);
+            var boardSize = new Vector3(ServiceL.Get<Tiles>().tileSize * 0.5f, 0, ServiceL.Get<Tiles>().tileSize * 0.5f) - ServiceL.Get<Tiles>().bounds;
+            var shift = Vector3.forward * (chessPiecesDirection * _deadSpacing * deadTeam.Count);
+            otherChessPieces.SetScale(Vector3.one * _deadScale);
 
             var startPosition = new Vector3(
-                startPositionShiftX[isFirstTeam ? 1 : 0] * Tiles.Instance.tileSize,
-                Tiles.Instance.yOffset,
-                startPositionShiftZ[isFirstTeam ? 0 : 1] * Tiles.Instance.tileSize);
+                startPositionShiftX[isFirstTeam ? 1 : 0] * ServiceL.Get<Tiles>().tileSize,
+                Tiles.YOffset,
+                startPositionShiftZ[isFirstTeam ? 0 : 1] * ServiceL.Get<Tiles>().tileSize);
 
             deadTeam.Add(otherChessPieces);
 
@@ -395,10 +372,10 @@ public class Chessboard : MonoBehaviour
         if (_chessPieces[pos.x, pos.y] is Pawn pawn && ((thisTeam == 0 && pos.y == 7) || (thisTeam == 1 && pos.y == 0)) &&
             Convert.ToBoolean(_currentTeam) == _isBlackTurn)
         {
-            UI.Instance.ChangeCamera(CameraAngle.menu);
+            ServiceL.Get<UI>().ChangeCamera(CameraAngle.menu);
             choseSelector.SpawnPiecesForChoose(SpawnAndPosPiaces.Instance.teamMaterials[thisTeam], type =>
             {
-                UI.Instance.ChangeCamera((_currentTeam == 0 || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
+                ServiceL.Get<UI>().ChangeCamera((_currentTeam == 0 || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
                 var piece = SpawnAndPosPiaces.Instance.SpawnSinglePiece(type, _currentTeam);
                 _chessPieces[pos.x, pos.y] = piece;
                 SpawnAndPosPiaces.Instance.SetPiecePos(_chessPieces, pos, true);
@@ -407,7 +384,7 @@ public class Chessboard : MonoBehaviour
                 Client.Instance.SendToServer(chosePiece);
                 ChangeTurn();
             });
-            Destroy(pawn.gameObject);
+            ChessBoard.DestoyPiece(pawn.gameObject);
             return;
         }
         ChangeTurn();
@@ -422,7 +399,7 @@ public class Chessboard : MonoBehaviour
 
         if (_currentlyDragging)
             _currentlyDragging = null;
-        Tiles.Instance.RemoveHighlightTiles(_availableMoves);
+        ServiceL.Get<Tiles>().RemoveHighlightTiles(_availableMoves);
 
         if (!IsMate(_chessPieces, turn))
         {
@@ -439,7 +416,7 @@ public class Chessboard : MonoBehaviour
     
 
 
-    public static bool IsKingUnderAttack(ChessPiece[,] board, int team)
+    public bool IsKingUnderAttack(ChessPiece[,] board, int team)
     {
         King ourKing = null;
 

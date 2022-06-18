@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using GameLogic;
 using UnityEngine;
+using Utils.ServiceLocator;
 
-namespace ChessPiaces
+namespace ChessPieces
 {
     public abstract class Direction : ChessPiece
     {
@@ -14,7 +15,7 @@ namespace ChessPiaces
 
             foreach (var direction in _directions)
             {
-                for (int i = 1; i < Tiles.Instance.TILE_COUNT_X; i++)
+                for (int i = 1; i < Tiles.TILE_COUNT_X; i++)
                 {
                     var posStep = currentPos + direction * i;
                     if (!GetValue(board, posStep.x, posStep.y, steps)) break; 

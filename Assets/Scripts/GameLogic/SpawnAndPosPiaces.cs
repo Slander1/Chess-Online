@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using ChessPiaces;
+using ChessPieces;
 using UnityEngine;
+using Utils.ServiceLocator;
 
 namespace GameLogic
 {
@@ -54,8 +55,8 @@ namespace GameLogic
 
         public void PositionAllPieces(ChessPiece[,] chessPieces)
         {
-            for (var x = 0; x < Tiles.Instance.TILE_COUNT_X; x++)
-            for (var y = 0; y < Tiles.Instance.TILE_COUNT_Y; y++)
+            for (var x = 0; x < Tiles.TILE_COUNT_X; x++)
+            for (var y = 0; y < Tiles.TILE_COUNT_Y; y++)
                 if (chessPieces[x, y] != null)
                     SetPiecePos(chessPieces,new Vector2Int(x, y), true);
         }
@@ -63,7 +64,7 @@ namespace GameLogic
         public void SetPiecePos(ChessPiece[,] chessPieces, Vector2Int pos, bool force = false)
         {
             chessPieces[pos.x, pos.y].currentPos = pos;
-            chessPieces[pos.x, pos.y].AnimateMove(Tiles.Instance.GetTileCenter(pos), force);
+            chessPieces[pos.x, pos.y].AnimateMove(ServiceL.Get<Tiles>().GetTileCenter(pos), force);
         }
         
         

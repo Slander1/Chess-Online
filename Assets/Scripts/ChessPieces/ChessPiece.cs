@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using GameLogic;
 using UnityEngine;
+using Utils.ServiceLocator;
 
-namespace ChessPiaces
+namespace ChessPieces
 {
     
     public abstract class ChessPiece : MonoBehaviour
@@ -41,8 +42,8 @@ namespace ChessPiaces
             return allSteps.Where(step =>
                 {
                     var nextStep = currentPos + step;
-                    return !(nextStep.x >= Tiles.Instance.TILE_COUNT_X ||
-                             nextStep.y >= Tiles.Instance.TILE_COUNT_Y ||
+                    return !(nextStep.x >= Tiles.TILE_COUNT_X ||
+                             nextStep.y >= Tiles.TILE_COUNT_Y ||
                              nextStep.x < 0 || nextStep.y < 0 ||
                              (board[nextStep.x, nextStep.y] != null && board[nextStep.x, nextStep.y].team == team));
                 })
@@ -62,7 +63,7 @@ namespace ChessPiaces
                 board[lastPos.x, lastPos.y] = null;
                 currentPos = nextPos;
 
-                var isCheck = Chessboard.IsKingUnderAttack(board, team);
+                var isCheck = ServiceL.Get<ChessBoardLogic>().IsKingUnderAttack(board, team);
 
                 currentPos = lastPos;
                 board[nextPos.x, nextPos.y] = lastPiece;
@@ -88,7 +89,7 @@ namespace ChessPiaces
         }
         protected static bool CheckBoard(int x, int y)
         {
-            return (x < 0 || y < 0 || x >= Tiles.Instance.TILE_COUNT_X || y >= Tiles.Instance.TILE_COUNT_Y);
+            return (x < 0 || y < 0 || x >= Tiles.TILE_COUNT_X || y >= Tiles.TILE_COUNT_Y);
         }
     
     }

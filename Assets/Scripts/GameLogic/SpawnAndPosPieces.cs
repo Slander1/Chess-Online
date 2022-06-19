@@ -5,18 +5,11 @@ using Utils.ServiceLocator;
 
 namespace GameLogic
 {
-    public class SpawnAndPosPiaces : MonoBehaviour
+    public class SpawnAndPosPieces : ServiceMonoBehaviour
     {
         
         [SerializeField] private ChessPiece[] figurePrefabs;
         [SerializeField] public Material[] teamMaterials;
-        
-        public static SpawnAndPosPiaces Instance { set; get; }
-
-        private void Awake()
-        {
-            Instance = this;
-        }
 
         public void SpawnAllPieces(ChessPiece[,] chessPieces)
         {

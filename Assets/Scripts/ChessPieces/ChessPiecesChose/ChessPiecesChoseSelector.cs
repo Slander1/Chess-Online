@@ -49,9 +49,9 @@ namespace ChessPieces.ChessPiecesChose
         private void SwapPawn(ChessPiece.Type pieceType)
         {
             _action?.Invoke(pieceType);
-            foreach (var piace in _chosePieces)
+            foreach (var peace in _chosePieces)
             {
-                Destroy(piace.gameObject);
+                Destroy(peace.gameObject);
             }
         }
     }

@@ -25,8 +25,8 @@ public class ChessBoardLogic : IService
        
         ServiceL.Get<Tiles>().GenerateAllTiles(_tileCountX, _tileCountY, transform);
         _chessPieces = new ChessPiece[_tileCountX, _tileCountY];
-        SpawnAndPosPiaces.Instance.SpawnAllPieces(_chessPieces);
-        SpawnAndPosPiaces.Instance.PositionAllPieces(_chessPieces);
+        ServiceL.Get<SpawnAndPosPieces>().SpawnAllPieces(_chessPieces);
+        ServiceL.Get<SpawnAndPosPieces>().PositionAllPieces(_chessPieces);
     }
 
     private List<ChessPiece> _deadWhite = new List<ChessPiece>();
@@ -113,8 +113,8 @@ public class ChessBoardLogic : IService
             }
         }
 
-        SpawnAndPosPiaces.Instance.SpawnAllPieces(_chessPieces);
-        SpawnAndPosPiaces.Instance.PositionAllPieces(_chessPieces);
+        ServiceL.Get<SpawnAndPosPieces>().SpawnAllPieces(_chessPieces);
+        ServiceL.Get<SpawnAndPosPieces>().PositionAllPieces(_chessPieces);
         _isBlackTurn = false;
         ServiceL.Get<UI>().ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
         ServiceL.Get<UI>().pauseMenu.gameObject.SetActive(false);
@@ -141,9 +141,9 @@ public class ChessBoardLogic : IService
     {
         var netChosePiece = msg as NetChosePiece;
         ChessBoard.DestoyPiece(_chessPieces[netChosePiece.pos.x, netChosePiece.pos.y].gameObject);
-        var piece = SpawnAndPosPiaces.Instance.SpawnSinglePiece(netChosePiece.type, netChosePiece.teamId);
+        var piece = ServiceL.Get<SpawnAndPosPieces>().SpawnSinglePiece(netChosePiece.type, netChosePiece.teamId);
         _chessPieces[netChosePiece.pos.x, netChosePiece.pos.y] = piece;
-        SpawnAndPosPiaces.Instance.SetPiecePos(_chessPieces,netChosePiece.pos, true);
+        ServiceL.Get<SpawnAndPosPieces>().SetPiecePos(_chessPieces,netChosePiece.pos, true);
         piece.currentPos = netChosePiece.pos;
     }
 
@@ -257,7 +257,7 @@ public class ChessBoardLogic : IService
 
     public void OnRaycastLayer(Ray ray, RaycastHit info)
     {
-        Vector2Int hitPosition = (Vector2Int) lockUpTile?.Invoke(info.transform.gameObject);
+        var hitPosition = (Vector2Int) lockUpTile?.Invoke(info.transform.gameObject);
 
             if (_currentHover == -Vector2Int.one)
             {
@@ -368,17 +368,17 @@ public class ChessBoardLogic : IService
         _chessPieces[pos.x, pos.y] = currentlyDragging;
         _chessPieces[lastPosition.x, lastPosition.y] = null;
         var thisTeam = _chessPieces[pos.x, pos.y].team;
-        SpawnAndPosPiaces.Instance.SetPiecePos(_chessPieces,pos);
+        ServiceL.Get<SpawnAndPosPieces>().SetPiecePos(_chessPieces,pos);
         if (_chessPieces[pos.x, pos.y] is Pawn pawn && ((thisTeam == 0 && pos.y == 7) || (thisTeam == 1 && pos.y == 0)) &&
             Convert.ToBoolean(_currentTeam) == _isBlackTurn)
         {
             ServiceL.Get<UI>().ChangeCamera(CameraAngle.menu);
-            choseSelector.SpawnPiecesForChoose(SpawnAndPosPiaces.Instance.teamMaterials[thisTeam], type =>
+            choseSelector.SpawnPiecesForChoose(ServiceL.Get<SpawnAndPosPieces>().teamMaterials[thisTeam], type =>
             {
                 ServiceL.Get<UI>().ChangeCamera((_currentTeam == 0 || _localGame) ? CameraAngle.whiteTeam : CameraAngle.blackTeam);
-                var piece = SpawnAndPosPiaces.Instance.SpawnSinglePiece(type, _currentTeam);
+                var piece = ServiceL.Get<SpawnAndPosPieces>().SpawnSinglePiece(type, _currentTeam);
                 _chessPieces[pos.x, pos.y] = piece;
-                SpawnAndPosPiaces.Instance.SetPiecePos(_chessPieces, pos, true);
+                ServiceL.Get<SpawnAndPosPieces>().SetPiecePos(_chessPieces, pos, true);
                 piece.currentPos = pos;
                 var chosePiece = new NetChosePiece { type = type, pos = pos, teamId = _currentTeam };
                 Client.Instance.SendToServer(chosePiece);

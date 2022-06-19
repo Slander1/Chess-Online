@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Net;
 using UnityEngine;
 using Utils.ServiceLocator;
 
@@ -26,6 +27,8 @@ namespace GameLogic
             ServiceL.Get<ChessBoardLogic>().lockUpTile += LockupTileIndex;
             ServiceL.Get<ChessBoardLogic>().swapTileLayer += SwapTileHover;
             ServiceL.Get<ChessBoardLogic>().highlightTiles += HighlightTiles;
+            ServiceL.Get<ChessBoardLogic>().getTileCenter += GetTileCenter;
+            ServiceL.Get<ChessBoardLogic>().removeHighlightTiles += RemoveHighlightTiles;
         }
 
         private void OnDisable()
@@ -33,6 +36,7 @@ namespace GameLogic
             ServiceL.Get<ChessBoardLogic>().lockUpTile -= LockupTileIndex;
             ServiceL.Get<ChessBoardLogic>().swapTileLayer -= SwapTileHover;
             ServiceL.Get<ChessBoardLogic>().highlightTiles -= HighlightTiles;
+            ServiceL.Get<ChessBoardLogic>().getTileCenter -= GetTileCenter;
         }
 
         private void SwapTileHover(Vector2Int pos, string Hover)

@@ -7,13 +7,13 @@ namespace ChessPieces
 {
     public abstract class Direction : ChessPiece
     {
-        protected abstract List<Vector2Int> _directions { get; }
+        protected abstract List<Vector2Int> directions { get; }
 
         protected override List<Vector2Int> GetSteps(ChessPiece[,] board)
         {
             var steps = new List<Vector2Int>();
 
-            foreach (var direction in _directions)
+            foreach (var direction in directions)
             {
                 for (int i = 1; i < Tiles.TILE_COUNT_X; i++)
                 {

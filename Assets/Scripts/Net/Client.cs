@@ -1,24 +1,25 @@
 using System;
 using Net.NetMassage;
+using ServiceLocator;
 using Unity.Networking.Transport;
 using UnityEngine;
+using Utils.ServiceLocator;
 
 namespace Net
 {
-    public class Client : MonoBehaviour
+    public class Client : IService
     {
-        public static Client Instance { get; set; }
         public NetworkDriver driver;
         public Action connectionDropped;
     
-        private NetworkConnection _connesction;
+        private NetworkConnection _connection;
 
         private bool _isActive = false;
-        private const float KeepAliveTickRate = 20.0f;
         private float _lastKeepAlive;
-        private void Awake()
+
+        public void Init()
         {
-            Instance = this;
+            ServiceL.Register(this);
         }
     
         public void Init(string ip,ushort port)
@@ -26,7 +27,7 @@ namespace Net
             driver = NetworkDriver.Create();
             NetworkEndPoint endpoint = NetworkEndPoint.Parse(ip, port);
         
-            _connesction = driver.Connect(endpoint);
+            _connection = driver.Connect(endpoint);
         
             Debug.Log("Attemping to cionnetct to Server on "+endpoint.Address);
             _isActive = true;
@@ -41,7 +42,7 @@ namespace Net
                 UnregisterToEvent();
                 driver.Dispose();
                 _isActive = false;
-                _connesction = default(NetworkConnection);
+                _connection = default(NetworkConnection);
             }
         }
 
@@ -64,7 +65,7 @@ namespace Net
 
         private void CheckAlive()
         {
-            if (!_connesction.IsCreated && _isActive)
+            if (!_connection.IsCreated && _isActive)
             {
                 Debug.Log("Something went wrong, lost connection to server");
                 connectionDropped?.Invoke();
@@ -75,7 +76,7 @@ namespace Net
         private void UpdateMessagePump()
         {
             NetworkEvent.Type cmd;
-            while ((cmd = _connesction.PopEvent(driver, out var streamReader)) != NetworkEvent.Type.Empty)
+            while ((cmd = _connection.PopEvent(driver, out var streamReader)) != NetworkEvent.Type.Empty)
             {
                 if (cmd == NetworkEvent.Type.Connect)
                 {
@@ -89,7 +90,7 @@ namespace Net
                 else if (cmd == NetworkEvent.Type.Disconnect)
                 {
                     Debug.Log("Client god disconected from server");
-                    _connesction = default(NetworkConnection);
+                    _connection = default(NetworkConnection);
                     connectionDropped?.Invoke();
                     ShutDown();
                 }
@@ -99,7 +100,7 @@ namespace Net
         public void SendToServer(NetMessage msg)
         {
             DataStreamWriter streamWriter;
-            driver.BeginSend(_connesction, out streamWriter);
+            driver.BeginSend(_connection, out streamWriter);
             msg.Serialize(ref streamWriter);
             driver.EndSend(streamWriter);
         }
@@ -118,12 +119,5 @@ namespace Net
         {
             SendToServer(netMessage);
         }
-    
-    
-    
-
-
-
-
     }
 }

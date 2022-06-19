@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using ChessPieces.ChessPiecesChose;
+using UI;
 using UnityEngine;
 using Utils.ServiceLocator;
 using static Net.NetUtility;
@@ -32,10 +33,10 @@ public class ChessBoard : ServiceMonoBehaviourGeneric<ChessBoardLogic>
         SChosePieceOnChange += data.OnChosePieceServer;
         SRematch += data.OnRematchServer;
         CRematch += data.OnRematchClient;
-        ServiceL.Get<UI>().setLocaleGame += data.OnSetLocaleGame;
-        ServiceL.Get<UI>().onPauseResumeButtonClick += data.InPauseButton;
-        ServiceL.Get<UI>().onRestartButtonClick += data.OnRestartButtonClick;
-        ServiceL.Get<UI>().onMenuButton += data.OnMenuButton;
+        ServiceL.Get<Buttons>().setLocaleGame += data.OnSetLocaleGame;
+        ServiceL.Get<Buttons>().onPauseResumeButtonClick += data.InPauseButton;
+        ServiceL.Get<Buttons>().onRestartButtonClick += data.OnRestartButtonClick;
+        ServiceL.Get<Buttons>().onMenuButton += data.OnMenuButton;
         ServiceL.Get<RayCaster>().onRaycastLayer += data.OnRaycastLayer;
         ServiceL.Get<RayCaster>().onRaycastWithoutLayer += data.onRaycastWithoutLayer;
     }
@@ -53,10 +54,10 @@ public class ChessBoard : ServiceMonoBehaviourGeneric<ChessBoardLogic>
         SChosePieceOnChange += data.OnChosePieceServer;
         SRematch -= data.OnRematchServer;
         CRematch -= data.OnRematchClient;
-        ServiceL.Get<UI>().setLocaleGame -= data.OnSetLocaleGame;
-        ServiceL.Get<UI>().onPauseResumeButtonClick -= data.InPauseButton;
-        ServiceL.Get<UI>().onRestartButtonClick -= data.OnRestartButtonClick;
-        ServiceL.Get<UI>().onMenuButton -= data.OnMenuButton;
+        ServiceL.Get<Buttons>().setLocaleGame -= data.OnSetLocaleGame;
+        ServiceL.Get<Buttons>().onPauseResumeButtonClick -= data.InPauseButton;
+        ServiceL.Get<Buttons>().onRestartButtonClick -= data.OnRestartButtonClick;
+        ServiceL.Get<Buttons>().onMenuButton -= data.OnMenuButton;
         ServiceL.Get<RayCaster>().onRaycastLayer -= data.OnRaycastLayer;
 
     }

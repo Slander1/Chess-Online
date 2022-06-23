@@ -1,14 +1,15 @@
 using System;
 using Net.NetMassage;
+using ServiceLocator;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using UnityEngine;
+using Utils.ServiceLocator;
 
 namespace Net
 {
-    public class Server : MonoBehaviour
+    public class Server : ServiceMonoBehaviour
     {
-        public static Server Instance { get; set; }
         public NetworkDriver driver;
         public Action connectionDropped;
     
@@ -17,14 +18,11 @@ namespace Net
         private bool _isActive = false;
         private const float KeepAliveTickRate = 20.0f;
         private float _lastKeepAlive;
-     
-        private void Awake()
-        {
-            Instance = this;
-        }
+        
 
         public void Init(ushort port)
         {
+            ServiceL.Register(this);
             driver = NetworkDriver.Create();
             NetworkEndPoint endpoint = NetworkEndPoint.AnyIpv4;
             endpoint.Port = port;

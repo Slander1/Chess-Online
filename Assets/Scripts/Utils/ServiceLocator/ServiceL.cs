@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using ServiceLocator;
 
 namespace Utils.ServiceLocator
@@ -35,9 +34,5 @@ namespace Utils.ServiceLocator
             return (T)_itemServiceLocator[type];
         }
 
-        public static async Task WaitInitialize()
-        {
-            await Task.Delay(10000);
-       }
     }
 }

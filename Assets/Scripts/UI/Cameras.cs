@@ -20,5 +20,15 @@ namespace UI
             camerasAngles[(int)index].SetActive(true);
         }
         
+        public void OnEnable()
+        {
+            
+        }
+
+        public void OnDisable()
+        {
+            
+        }
+        
     }
 }

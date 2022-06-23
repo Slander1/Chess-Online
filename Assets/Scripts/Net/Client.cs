@@ -7,7 +7,7 @@ using Utils.ServiceLocator;
 
 namespace Net
 {
-    public class Client : IService
+    public class Client : ServiceMonoBehaviour
     {
         public NetworkDriver driver;
         public Action connectionDropped;
@@ -17,13 +17,9 @@ namespace Net
         private bool _isActive = false;
         private float _lastKeepAlive;
 
-        public void Init()
-        {
-            ServiceL.Register(this);
-        }
-    
         public void Init(string ip,ushort port)
         {
+            ServiceL.Register(this);
             driver = NetworkDriver.Create();
             NetworkEndPoint endpoint = NetworkEndPoint.Parse(ip, port);
         

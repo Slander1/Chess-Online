@@ -30,8 +30,6 @@ public class ChessBoard : ServiceMonoBehaviourGeneric<ChessBoardLogic>
         SMakeMove += data.OnMakeMoveServer;
         CMakeMove += data.OnMakeMoveClient;
         CChosePieceOnChange += data.OnChosePieceClient;
-        SChosePieceOnChange += data.OnChosePieceServer;
-        SRematch += data.OnRematchServer;
         CRematch += data.OnRematchClient;
         ServiceL.Get<Buttons>().setLocaleGame += data.OnSetLocaleGame;
         ServiceL.Get<Buttons>().onPauseResumeButtonClick += data.InPauseButton;
@@ -51,8 +49,6 @@ public class ChessBoard : ServiceMonoBehaviourGeneric<ChessBoardLogic>
         SMakeMove -= data.OnMakeMoveServer;
         CMakeMove -= data.OnMakeMoveClient;
         CChosePieceOnChange += data.OnChosePieceClient;
-        SChosePieceOnChange += data.OnChosePieceServer;
-        SRematch -= data.OnRematchServer;
         CRematch -= data.OnRematchClient;
         ServiceL.Get<Buttons>().setLocaleGame -= data.OnSetLocaleGame;
         ServiceL.Get<Buttons>().onPauseResumeButtonClick -= data.InPauseButton;

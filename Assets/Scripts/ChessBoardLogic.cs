@@ -61,34 +61,28 @@ public class ChessBoardLogic : IService
     public event Action<List<Vector2Int>> removeHighlightTiles;
    
     
-
-    public void OnRematchServer(NetMessage msg)
-    {
-        Server.Instance.Broadcast(msg);
-    }
-
     public void OnRematchClient(NetMessage msg)
     {
         var rematch = msg as NetRematch;
         _playerRematch[rematch.teamId] = rematch.wantRematch == 1;
 
-        if ((rematch.teamId != _currentTeam) && (rematch.wantRematch == 0))
-            ServiceL.Get<Buttons>().textQuit.gameObject.SetActive(true);
-        else if (rematch.teamId != _currentTeam)
-            ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(true);
-
-        if (_playerRematch[0] && _playerRematch[1])
-        {
-            ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(false);
-            OnRestartButtonClick();
-        }
+        // if ((rematch.teamId != _currentTeam) && (rematch.wantRematch == 0))
+        //     ServiceL.Get<Buttons>().textQuit.gameObject.SetActive(true);
+        // else if (rematch.teamId != _currentTeam)
+        //     ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(true);
+        //
+        // if (_playerRematch[0] && _playerRematch[1])
+        // {
+        //     ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(false);
+        //     OnRestartButtonClick();
+        // }
     }
 
     public void OnRestartButtonClick()
     {
         _currentlyDragging = null;
         _availableMoves.Clear();
-        ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(false);
+        // ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(false);
         _playerRematch[0] = _playerRematch[1] = false;
         foreach (var item in _deadWhite)
         {
@@ -115,7 +109,7 @@ public class ChessBoardLogic : IService
         ServiceL.Get<SpawnAndPosPieces>().PositionAllPieces(_chessPieces);
         _isBlackTurn = false;
         ServiceL.Get<Cameras>().ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? Cameras.CameraAngle.whiteTeam : Cameras.CameraAngle.blackTeam);
-        ServiceL.Get<Buttons>().pauseMenu.gameObject.SetActive(false);
+        // ServiceL.Get<Buttons>().pauseMenu.gameObject.SetActive(false);
         if (_localGame)
             _currentTeam = 0;
     }
@@ -128,12 +122,7 @@ public class ChessBoardLogic : IService
         else
             ServiceL.Get<Cameras>().ChangeCamera(((_currentTeam == 0 && !_localGame) || _localGame) ? Cameras.CameraAngle.whiteTeam : Cameras.CameraAngle.blackTeam);
     }
-
-    public void OnChosePieceServer(NetMessage msg)
-    {
-        var netChosePiece = msg as NetChosePiece;
-        Server.Instance.Broadcast(netChosePiece);
-    }
+    
 
     public void OnChosePieceClient(NetMessage msg)
     {
@@ -161,10 +150,10 @@ public class ChessBoardLogic : IService
 
     public void OnStartGameClient(NetMessage msg, int connectionNumber)
     {
-        ServiceL.Get<Buttons>().backGroundIMG.gameObject.SetActive(false);
+        // ServiceL.Get<Buttons>().backGroundIMG.gameObject.SetActive(false);
         ServiceL.Get<Cameras>().ChangeCamera((_currentTeam == 0) ? Cameras.CameraAngle.whiteTeam : Cameras.CameraAngle.blackTeam);
         
-        ServiceL.Get<Buttons>().menuAnimator.SetTrigger(InGameMenu);
+        // ServiceL.Get<Buttons>().menuAnimator.SetTrigger(InGameMenu);
         ServiceL.Get<Buttons>().pauseButton.gameObject.SetActive(true);
     }
 
@@ -174,7 +163,7 @@ public class ChessBoardLogic : IService
         _currentTeam = netWelcome.AssignedTeam;
         if (_localGame && _currentTeam == 0)
         {
-            Server.Instance.Broadcast(new NetStartGame());
+            ServiceL.Get<Server>().Broadcast(new NetStartGame());
         }
     }
 
@@ -182,7 +171,7 @@ public class ChessBoardLogic : IService
     public void OnMakeMoveServer(NetMessage msg)
     {
         var makeMove = msg as NetMakeMove;
-        Server.Instance.Broadcast(makeMove);
+        ServiceL.Get<Server>().Broadcast(makeMove);
     }
 
     public void OnWelcomeServer(NetMessage msg)
@@ -190,7 +179,7 @@ public class ChessBoardLogic : IService
         if (_localGame)
             _currentTeam = 0;
         if (++_playerCount == 1 || _localGame)
-            Server.Instance.Broadcast(new NetStartGame());
+            ServiceL.Get<Server>().Broadcast(new NetStartGame());
         //var netWelcome = msg as NetWelcome;
         //netWelcome.AssignedTeam = ++_playerCount;
         //Server.Instance.SendToClient(networkConnection, netWelcome);
@@ -229,8 +218,8 @@ public class ChessBoardLogic : IService
         ServiceL.Get<Client>().SendToServer(rematch);
         OnRestartButtonClick();
         ServiceL.Get<Buttons>().OnLeaveFromGameMenu();
-        ServiceL.Get<Buttons>().backGroundIMG.gameObject.SetActive(true);
-        ServiceL.Get<Buttons>().pauseMenu.gameObject.SetActive(false);
+        // ServiceL.Get<Buttons>().backGroundIMG.gameObject.SetActive(true);
+        // ServiceL.Get<Buttons>().pauseMenu.gameObject.SetActive(false);
         ServiceL.Get<Buttons>().pauseButton.gameObject.SetActive(false);
         
         //Invoke("ShutdownRelay", 1.0f);
@@ -242,9 +231,9 @@ public class ChessBoardLogic : IService
     private void ShutdownRelay()
     {
         ServiceL.Get<Client>().ShutDown();
-        Server.Instance.ShutDown();
-        ServiceL.Get<Buttons>().textQuit.gameObject.SetActive(false);
-        ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(false);
+        ServiceL.Get<Server>().ShutDown();
+        // ServiceL.Get<Buttons>().textQuit.gameObject.SetActive(false);
+        // ServiceL.Get<Buttons>().textRematch.gameObject.SetActive(false);
     }
 
     public void OnSetLocaleGame(bool value, bool isServer)

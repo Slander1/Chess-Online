@@ -1,28 +1,53 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Utils.ServiceLocator;
 
 namespace UI
 {
-    public class PopUpManager : MonoBehaviour
+    public enum PopUpsName
     {
-        [SerializeField] public List<GameObject> popUpObjects = new List<GameObject>();
-        public static readonly Dictionary<string, GameObject> PopUps = new Dictionary<string, GameObject>();
+        PauseMenu,
+        WhiteWin,
+        BlackWin,
+        Check
+    }
+    
 
-        private void Awake()
+    public class PopUpManager : ServiceMonoBehaviour
+    {
+
+        [SerializeField] private List<GameObject> popUpObjects = new List<GameObject>();
+        
+        private readonly List<GameObject> _nowActivePopUp = new List<GameObject>();
+
+        public void ShowPopUP(PopUpsName popUpName, Transform parent)
         {
             foreach (var popUp in popUpObjects)
             {
-                PopUps.Add(popUp.name, popUp);
+                if (popUp.name == popUpName.ToString())
+                {
+                    var curPopUp = Instantiate(popUp, parent);
+                    _nowActivePopUp.Add(curPopUp);
+                    return;
+                }
             }
         }
-        public static void ShowPopUP(string popUpName, string whoWin = "")
+
+        public void HidePopUp(PopUpsName popUpName)
         {
-            if (!PopUps.ContainsKey(popUpName))
-                return;
-            var popUp = PopUps.First(popUp => 
-                popUp.Key == popUpName);
-            Instantiate(popUp.Value);
+            var deletedObject = _nowActivePopUp.First(popUp => popUp.name == popUpName.ToString());
+            _nowActivePopUp.Remove(deletedObject);
+            Destroy(deletedObject);
         }
+
+        public void HideAllPopUps()
+        {
+            foreach (var popUp in _nowActivePopUp)
+                Destroy(popUp);
+            
+            _nowActivePopUp.Clear();
+        }
+        
     }
 }

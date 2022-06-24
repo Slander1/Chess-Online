@@ -11,7 +11,6 @@ namespace UI
     {
         public Button pauseButton; 
         public Action<bool, bool> setLocaleGame;
-        public Action<bool, bool, bool, bool, string> contolActiveObject;
         public Action<int> setTrigger;
         public Action<bool> onPauseResumeButtonClick;
         public Action onRestartButtonClick;
@@ -22,7 +21,7 @@ namespace UI
         {
             setLocaleGame?.Invoke(true, true);
             setTrigger?.Invoke(3);
-            ShowPopUP("PauseMenu");
+            
         }
 
         public void OnOnlineGameButtonClick()
@@ -55,10 +54,7 @@ namespace UI
         }
         public void OnPauseButtonClick()
         {
-            // pauseMenu.gameObject.SetActive(true);
-            // resumeButton.gameObject.SetActive(true);
-            // exitButton.gameObject.SetActive(true);
-            // restartButton.gameObject.SetActive(true);
+            ServiceL.Get<PopUpManager>().ShowPopUP(PopUpsName.PauseMenu, transform);
             onPauseResumeButtonClick?.Invoke(true);
         }
 
@@ -78,30 +74,13 @@ namespace UI
             onRestartButtonClick?.Invoke();
         }
 
-        private void Victory(int team)
-        {
-            contolActiveObject.Invoke(true,false,true,true,(team == 0) ? "White wins" : "Black wins");
-            /*pauseMenu.gameObject.SetActive(true);
-            resumeButton.gameObject.SetActive(false);
-            exitButton.gameObject.SetActive(true);
-            restartButton.gameObject.SetActive(true);
-            victoryText.text = (team == 0) ? "White wins" : "Black wins";*/
-        }
+        
     
-        public void Shah(int team)
-        {
-            contolActiveObject.Invoke(true,true,false,false,"Check");
-            /* pauseMenu.gameObject.SetActive(true);
-              resumeButton.gameObject.SetActive(true);
-                exitButton.gameObject.SetActive(false);
-             restartButton.gameObject.SetActive(false);
-         victoryText.text = "Check";*/
-
-        }
+        
 
         public void OnLeaveFromGameMenu()
         {
-            contolActiveObject.Invoke(true,true,false,false,"Check");
+            //contolActiveObject.Invoke(true,true,false,false,"Check");
             // pauseMenu.gameObject.SetActive(false);
             // textQuit.gameObject.SetActive(false);
             // textRematch.gameObject.SetActive(false);

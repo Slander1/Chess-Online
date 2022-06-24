@@ -29,30 +29,28 @@ namespace UI
         private void OnEnable()
         {
             ServiceL.Get<Buttons>().setTrigger += SetTrigger;
-            ServiceL.Get<Buttons>().contolActiveObject += ContolActiveObject;
             
-            //ServiceL.Get<ChessBoardLogic>().OnCheck += Shah;
-            //ServiceL.Get<ChessBoardLogic>().OnMate += Victory;
+            ServiceL.Get<ChessBoardLogic>().OnCheck += Check;
+            ServiceL.Get<ChessBoardLogic>().OnMate += Victory;
         }
-
-        private void ContolActiveObject(bool pauseMenu, bool resumeBtn, bool exitBtn, bool restartBtn, string victoryTxt)
-        {
-            // this.pauseMenu.gameObject.SetActive(pauseMenu);
-            // resumeButton.gameObject.SetActive(resumeBtn);
-            // exitButton.gameObject.SetActive(exitBtn);
-            // restartButton.gameObject.SetActive(true);
-            // victoryText.text = victoryTxt;
-        }
+        
 
         private void OnDisable()
         {
             ServiceL.Get<Buttons>().setTrigger -= SetTrigger;
-            ServiceL.Get<Buttons>().contolActiveObject -= ContolActiveObject;
-            //ServiceL.Get<ChessBoardLogic>().OnCheck -= Shah;
-            //ServiceL.Get<ChessBoardLogic>().OnMate -= Victory;
+            ServiceL.Get<ChessBoardLogic>().OnCheck -= Check;
+            ServiceL.Get<ChessBoardLogic>().OnMate -= Victory;
             
         }
 
+        private void Check(int team)
+        {
+            ServiceL.Get<PopUpManager>().ShowPopUP(PopUpsName.Check, transform);
+        }
+        private void Victory(int team)
+        {
+            ServiceL.Get<PopUpManager>().ShowPopUP((team == 0) ? PopUpsName.WhiteWin : PopUpsName.BlackWin, transform);
+        }
         private void SetTrigger(int value)
         {
             menuAnimator.SetTrigger(_triggers[value]);
